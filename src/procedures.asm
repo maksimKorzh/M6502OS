@@ -32,7 +32,7 @@ clear_screen:           xor ax, ax                          ; reset AX register
                         call set_attribute                  ; make character light green
                         retf                                ; return from procedure
 ;----------------------------------------------------------------------------------------------------------
-print_string:           cld                                 ; clear direction flag
+print_string:           cld                                 ; SI points to string to print
 print_string_next:      lodsb                               ; read next byte from SOURCE INDEX register
                         mov ah, 0x0e                        ; BIOS code for teletype output
                         cmp al, 0                           ; match the zero terminating char of the string
@@ -40,9 +40,11 @@ print_string_next:      lodsb                               ; read next byte fro
                         call set_attribute                  ; make character light green
                         int 0x10                            ; assuming ah = 0x0e int 0x10 would print a single char
                         jmp print_string_next               ; repeat printing char until string is fully printed
-print_string_return:    retf                                ; return from procedure
+print_string_return:    
+                        call set_attribute                  ; make cursor light green
+                        retf                                ; return from procedure
 ;----------------------------------------------------------------------------------------------------------
-print_memory:           cld                                 ; ensure lodsb instruction increments SI register
+print_memory:           cld                                 ; SI holds the starting address
                         call print_address                  ; print hex value stored at SI
                         mov ax, 0x0e3a                      ; colon character
                         int 0x10                            ; print it
@@ -67,7 +69,25 @@ print_memory_return:    mov ax, 0x0e0a                      ; new line character
                         int 0x10                            ; print it
                         mov ax, 0x0e0d                      ; carriage return
                         int 0x10                            ; print it
+                        call set_attribute                  ; ensure cursor is green
                         retf                                ; return to edit loop
+;----------------------------------------------------------------------------------------------------------
+print_byte:             mov cl, al                          ; AL holds the argument to print
+                        and al, 0xf0                        ; extract 1st nibble => 0xF0 => 1111 0000
+                        shr al, 4                           ; shift 1st nibble 4 bits to the right 1111 0000 => 0000 1111
+                        call print_hex                      ; print 1st nibble
+                        mov al, cl                          ; restore byte value from cl back to al
+                        and al, 0x0f                        ; extract 2nd nibble => 0x0F => 0000 1111
+                        call print_hex                      ; print 2nd nibble
+                        mov ax, 0x0e20                      ; space character
+                        int 0x10                            ; print it
+                        call set_attribute                  ; ensure cursor is green
+                        retf                                ; return from procedure
+;----------------------------------------------------------------------------------------------------------
+print_word:             mov si, ax                          ; AX holds the argument to print
+                        call print_address                  ; print word at DS:SI
+                        call set_attribute                  ; ensure cursor is green
+                        retf                                ; return from the procedure
 ;==========================================================================================================
 ;                                              LOCAL PROCEDURES
 ;==========================================================================================================
