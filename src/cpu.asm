@@ -28,13 +28,7 @@ start:                  mov ax, cs                          ; init AX (BOOTSECTO
                         call PROCEDURES:clear_screen        ; init 40 x 25 text video mode
 ;----------------------------------------------------------------------------------------------------------
 
-
 call print_debug_info
-call print_debug_info
-call print_debug_info
-call print_debug_info
-call PROCEDURES:print_memory
-
 jmp $
 ;----------------------------------------------------------------------------------------------------------
 print_debug_info:       mov si, print_registers             ; point SI to register names
@@ -60,8 +54,8 @@ print_debug_info:       mov si, print_registers             ; point SI to regist
 register_A              db 0x00                             ; register A
 register_X              db 0x00                             ; register B
 register_Y              db 0x00                             ; register C
-register_P              db 0x00                             ; processor flags (NV-BDIZC)
-stack_pointer           db 0x00                             ; stack pointer points to 0x01FF
+register_P              db 0x20                             ; processor flags (NV-BDIZC)
+stack_pointer           db 0xff                             ; stack pointer points to 0x01FF
 program_counter         dw 0x0000                           ; address to get where the program code starts
 ;==========================================================================================================
 ;                                               VARIABLES
