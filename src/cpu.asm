@@ -14,12 +14,12 @@
 ;==========================================================================================================
 ;                                            GLOBAL DEFINITIONS
 ;==========================================================================================================
-%define          PROCEDURES 0x7e00                          ; global procedures address
-%define        clear_screen 0x0004                          ; clear screen procedure local offset
-%define        print_string 0x0016                          ; print string procedure local offset
-%define        print_memory 0x0029                          ; hex to ascii procedure local offset
-%define          print_byte 0x0067                          ; print byte procedure local offset
-%define          print_word 0x0081                          ; print word procedure local offset
+%define                 PROCEDURES 0x7e00                   ; global procedures address
+%define                 clear_screen 0x0004                 ; clear screen procedure local offset
+%define                 print_string 0x0016                 ; print string procedure local offset
+%define                 print_memory 0x0029                 ; hex to ascii procedure local offset
+%define                 print_byte 0x0067                   ; print byte procedure local offset
+%define                 print_word 0x0081                   ; print word procedure local offset
 ;==========================================================================================================
 ;                                                 OPCODES
 ;==========================================================================================================
@@ -176,7 +176,7 @@
 %define                 INS_SBC_INDX 0xE1
 %define                 INS_SBC_INDY 0xF1
 ;----------------------------------------------------------------------------------------------------------
-;                                         REGISTER COMPARISON
+;                                          REGISTER COMPARISON
 ;----------------------------------------------------------------------------------------------------------
 %define                 INS_CMP 0xC9
 %define                 INS_CMP_ZP 0xC5
@@ -232,8 +232,74 @@ start:                  mov ax, cs                          ; init AX (BOOTSECTO
                         call PROCEDURES:clear_screen        ; init 40 x 25 text video mode
 ;----------------------------------------------------------------------------------------------------------
 
+; 0x0000_F000    0x0001_0FFF
+
+
+mov di, 0x0500
+mov si, 0x0510
+call reset_memory_range
+
+mov si, 0x0500
+mov di, 0x0520
+call print_memory_range
+
+mov byte [register_A], 0x11
+mov byte [register_X], 0x22
+mov byte [register_Y], 0x33
+mov byte [register_P], 0x44
+mov byte [stack_pointer], 0xaa
+mov word [program_counter], 0x1234
 call print_debug_info
+
+call reset_cpu
+call print_debug_info
+
+
 jmp $
+
+;----------------------------------------------------------------------------------------------------------
+;                                     RESET CPU - ARGS: none
+;----------------------------------------------------------------------------------------------------------
+reset_cpu:              mov byte [register_A], 0x00         ; reset register A
+                        mov byte [register_X], 0x00         ; reset register X
+                        mov byte [register_Y], 0x00         ; reset register Y
+                        mov byte [register_P], 0x20         ; reset processor flags (NV-BDIZC)
+                        mov byte [stack_pointer], 0xff      ; reset stack pointer
+                        mov word [program_counter], 0x0000  ; reset program counter
+                        ret                                 ; return from procedure
+;----------------------------------------------------------------------------------------------------------
+;                   RESET MEMORY RANGE - ARGS: DI-start address, SI-end address
+;----------------------------------------------------------------------------------------------------------
+reset_memory_range:     push ds                             ; preserve DS
+                        push es                             ; preserve ES
+                        xor ax, ax                          ; set AX to 0
+                        mov ds, ax                          ; set DS to 0
+                        mov es, ax                          ; set ES to 0
+                        mov al, 0xab                        ; reset value
+reset_next_byte:        stosb                               ; set byte value at [ES:DI] to 0
+                        cmp di, si                          ; any more bytes to reset?
+                        jg reset_memory_return              ; if not then stop
+                        jmp reset_next_byte                 ; otherwise reset next byte
+reset_memory_return:    pop es                              ; restore ES
+                        pop ds                              ; restore DS
+                        ret                                 ; return from procedure
+;----------------------------------------------------------------------------------------------------------
+;                   PRINT MEMORY RANGE - ARGS: SI-start address, DI-end address
+;----------------------------------------------------------------------------------------------------------
+print_memory_range:     push ds                             ; preserve DS
+                        push es                             ; preserve ES
+                        xor ax, ax                          ; set AX to 0
+                        mov ds, ax                          ; set DS to 0
+                        mov es, ax                          ; set ES to 0
+print_range_next_line:  call PROCEDURES:print_memory        ; print 8 bytes
+                        cmp si, di                          ; any more lines to print?
+                        jg print_range_return               ; if not then stop
+                        jmp print_range_next_line           ; otherwise continue 
+print_range_return:     pop es                              ; restore ES
+                        pop ds                              ; restore DS
+                        ret                                 ; return from procedure
+;----------------------------------------------------------------------------------------------------------
+;                                  PRINT DEBUG INFO - ARGS: none
 ;----------------------------------------------------------------------------------------------------------
 print_debug_info:       mov si, print_registers             ; point SI to register names
                         call PROCEDURES:print_string        ; print register names
@@ -256,8 +322,8 @@ print_debug_info:       mov si, print_registers             ; point SI to regist
 ;                                             REGISTERS
 ;==========================================================================================================
 register_A              db 0x00                             ; register A
-register_X              db 0x00                             ; register B
-register_Y              db 0x00                             ; register C
+register_X              db 0x00                             ; register X
+register_Y              db 0x00                             ; register Y
 register_P              db 0x20                             ; processor flags (NV-BDIZC)
 stack_pointer           db 0xff                             ; stack pointer points to 0x01FF
 program_counter         dw 0x0000                           ; address to get where the program code starts

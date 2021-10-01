@@ -32,7 +32,7 @@ clear_screen:           xor ax, ax                          ; reset AX register
                         call set_attribute                  ; make character light green
                         retf                                ; return from procedure
 ;----------------------------------------------------------------------------------------------------------
-print_string:           cld                                 ; SI points to string to print
+print_string:           cld                                 ; ARGS: SI points to string to print
 print_string_next:      lodsb                               ; read next byte from SOURCE INDEX register
                         mov ah, 0x0e                        ; BIOS code for teletype output
                         cmp al, 0                           ; match the zero terminating char of the string
@@ -44,7 +44,7 @@ print_string_return:
                         call set_attribute                  ; make cursor light green
                         retf                                ; return from procedure
 ;----------------------------------------------------------------------------------------------------------
-print_memory:           cld                                 ; SI holds the starting address
+print_memory:           cld                                 ; ARGS: SI holds the starting address
                         call print_address                  ; print hex value stored at SI
                         mov ax, 0x0e3a                      ; colon character
                         int 0x10                            ; print it
@@ -72,7 +72,7 @@ print_memory_return:    mov ax, 0x0e0a                      ; new line character
                         call set_attribute                  ; ensure cursor is green
                         retf                                ; return to edit loop
 ;----------------------------------------------------------------------------------------------------------
-print_byte:             mov dl, al                          ; AL holds the argument to print
+print_byte:             mov dl, al                          ; ARGS: AL holds the argument to print
                         and al, 0xf0                        ; extract 1st nibble => 0xF0 => 1111 0000
                         shr al, 4                           ; shift 1st nibble 4 bits to the right 1111 0000 => 0000 1111
                         call print_hex                      ; print 1st nibble
@@ -84,7 +84,7 @@ print_byte:             mov dl, al                          ; AL holds the argum
                         call set_attribute                  ; ensure cursor is green
                         retf                                ; return from procedure
 ;----------------------------------------------------------------------------------------------------------
-print_word:             mov si, ax                          ; AX holds the argument to print
+print_word:             mov si, ax                          ; ARGS: AX holds the argument to print
                         call print_address                  ; print word at DS:SI
                         call set_attribute                  ; ensure cursor is green
                         retf                                ; return from the procedure
