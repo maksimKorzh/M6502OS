@@ -12,12 +12,6 @@
 [bits 16]                                                   ; assemble 16-bit code
 [org 0x0000]                                                ; local variable offset
 ;==========================================================================================================
-;                                            GLOBAL DEFINITIONS
-;==========================================================================================================
-%define          BOOTSECTOR 0x7c00                          ; boot sector address in RAM
-%define          PROCEDURES 0x7e00                          ; global procedures address
-%define           SIMULATOR 0x7d00                          ; CPU simulator address
-;==========================================================================================================
 ;                                             GLOBAL PROCEDURES
 ;==========================================================================================================
 start:                  mov ax, cs                          ; init AX (BOOTSECTOR)
@@ -50,10 +44,10 @@ print_memory:           cld                                 ; ARGS: SI holds the
                         int 0x10                            ; print it
                         mov ax, 0x0e20                      ; space character
                         int 0x10                            ; print it
-                        mov ch, 0                           ; CH serves as a byte counter, init it
-print_memory_next:      lodsb                               ; read next byte where SI is pointing to, increment SI register
-                        cmp ch, 8                           ; is there any more bytes left to print
+                        mov cl, 0                           ; CH serves as a byte counter, init it
+print_memory_next:      cmp cl, 0x08                        ; is there any more bytes left to print
                         je print_memory_return              ; go to .continue label
+                        lodsb                               ; read next byte where SI is pointing to, increment SI register
                         mov dl, al                          ; temp store AL to DL
                         and al, 0xf0                        ; extract 1st nibble => 0xF0 => 1111 0000
                         shr al, 4                           ; shift 1st nibble 4 bits to the right 1111 0000 => 0000 1111
@@ -63,7 +57,7 @@ print_memory_next:      lodsb                               ; read next byte whe
                         call print_hex                      ; print 2nd nibble
                         mov ax, 0x0e20                      ; space character
                         int 0x10                            ; print it
-                        inc ch                              ; increment byte counter
+                        inc cl                              ; increment byte counter
                         jmp print_memory_next               ; process next byte
 print_memory_return:    mov ax, 0x0e0a                      ; new line character
                         int 0x10                            ; print it

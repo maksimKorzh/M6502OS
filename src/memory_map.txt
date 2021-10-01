@@ -7,7 +7,7 @@
 ;                   0x0000_7C00    0x0000_7DFF    512 bytes    bootloader
 ;                   0x0000_7E00    0x0000_7FFF    512 bytes    global procedures
 ;                   0x0000_8000    0x0000_????                 cpu simulator
-;                   0x0000_F000    0x0001_0FFF   8192 bytes    emulated RAM
+;                   0x0000_E000    0x0000_FFFF   8192 bytes    simulated RAM
 ;----------------------------------------------------------------------------------------------------------
 ;  6502 RAM         0x0000_0000    0x0000_00FF    256 bytes    zero page
 ;                   0x0000_F100    0x0000_F1FF    256 bytes    stack memory

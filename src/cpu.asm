@@ -14,7 +14,7 @@
 ;==========================================================================================================
 ;                                            GLOBAL DEFINITIONS
 ;==========================================================================================================
-%define                 PROCEDURES 0x7e00                   ; global procedures address
+%define                 PROCEDURES 0x7e0                    ; global procedures address
 %define                 clear_screen 0x0004                 ; clear screen procedure local offset
 %define                 print_string 0x0016                 ; print string procedure local offset
 %define                 print_memory 0x0029                 ; hex to ascii procedure local offset
@@ -235,21 +235,17 @@ start:                  mov ax, cs                          ; init AX (BOOTSECTO
 ; 0x0000_F000    0x0001_0FFF
 
 
-mov di, 0x0500
-mov si, 0x0510
+mov di, 0xe000
+mov si, 0xffff
 call reset_memory_range
 
-mov si, 0x0500
-mov di, 0x0520
+mov si, 0xe000
+mov di, 0xe010
 call print_memory_range
 
-mov byte [register_A], 0x11
-mov byte [register_X], 0x22
-mov byte [register_Y], 0x33
-mov byte [register_P], 0x44
-mov byte [stack_pointer], 0xaa
-mov word [program_counter], 0x1234
-call print_debug_info
+
+mov si, new_line
+call PROCEDURES:print_string
 
 call reset_cpu
 call print_debug_info
@@ -275,10 +271,10 @@ reset_memory_range:     push ds                             ; preserve DS
                         xor ax, ax                          ; set AX to 0
                         mov ds, ax                          ; set DS to 0
                         mov es, ax                          ; set ES to 0
-                        mov al, 0xab                        ; reset value
-reset_next_byte:        stosb                               ; set byte value at [ES:DI] to 0
-                        cmp di, si                          ; any more bytes to reset?
+                        mov al, 0x00                        ; reset value
+reset_next_byte:        cmp di, si                          ; any more bytes to reset?
                         jg reset_memory_return              ; if not then stop
+                        stosb                               ; set byte value at [ES:DI] to 0
                         jmp reset_next_byte                 ; otherwise reset next byte
 reset_memory_return:    pop es                              ; restore ES
                         pop ds                              ; restore DS
@@ -291,9 +287,9 @@ print_memory_range:     push ds                             ; preserve DS
                         xor ax, ax                          ; set AX to 0
                         mov ds, ax                          ; set DS to 0
                         mov es, ax                          ; set ES to 0
-print_range_next_line:  call PROCEDURES:print_memory        ; print 8 bytes
-                        cmp si, di                          ; any more lines to print?
-                        jg print_range_return               ; if not then stop
+print_range_next_line:  cmp si, di                          ; any more lines to print?
+                        jge  print_range_return             ; if not then stop
+                        call PROCEDURES:print_memory        ; print 8 bytes
                         jmp print_range_next_line           ; otherwise continue 
 print_range_return:     pop es                              ; restore ES
                         pop ds                              ; restore DS

@@ -14,9 +14,9 @@
 ;==========================================================================================================
 ;                                            GLOBAL DEFINITIONS
 ;==========================================================================================================
-%define          BOOTSECTOR 0x7c00                          ; boot sector address in RAM
-%define          PROCEDURES 0x7e00                          ; global procedures address
-%define           SIMULATOR 0x7d00                          ; CPU simulator address
+%define          BOOTSECTOR 0x7c0                           ; boot sector address in RAM
+%define          PROCEDURES 0x7e0                           ; global procedures address
+%define           SIMULATOR 0x800                           ; CPU simulator address
 ;==========================================================================================================
 ;                                                BOOTLOADER
 ;==========================================================================================================
