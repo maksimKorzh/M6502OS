@@ -14,19 +14,26 @@
 ;==========================================================================================================
 ;                                            GLOBAL DEFINITIONS
 ;==========================================================================================================
+;----------------------------------------------------------------------------------------------------------
+;                                                PROCEDURES
+;----------------------------------------------------------------------------------------------------------
 %define                 PROCEDURES 0x7e0                    ; global procedures address
 %define                 clear_screen 0x0004                 ; clear screen procedure local offset
 %define                 print_string 0x0016                 ; print string procedure local offset
 %define                 print_memory 0x0029                 ; hex to ascii procedure local offset
 %define                 print_byte 0x0067                   ; print byte procedure local offset
 %define                 print_word 0x0081                   ; print word procedure local offset
+;----------------------------------------------------------------------------------------------------------
+;                                                   LOCALS
+;----------------------------------------------------------------------------------------------------------
+%define                 PROGRAM 0xe600                      ; temp starting point for a 6502 program
 ;==========================================================================================================
 ;                                                 OPCODES
 ;==========================================================================================================
 ;----------------------------------------------------------------------------------------------------------
 ;                                             LOAD OPERATIONS
 ;----------------------------------------------------------------------------------------------------------
-%define                 INS_LDA_IM 0xA9
+%define                 INS_LDA_IM 0xa9
 %define                 INS_LDA_ZP 0xA5
 %define                 INS_LDA_ZPX 0xB5
 %define                 INS_LDA_ABS 0xAD
@@ -227,22 +234,102 @@
 ;==========================================================================================================
 ;                                                 CPU
 ;==========================================================================================================
-start:                  mov ax, cs                          ; init AX (BOOTSECTOR)
+start:                  mov ax, cs                          ; init AX (CPU address)
                         mov ds, ax                          ; hook up local variable addresses
                         call PROCEDURES:clear_screen        ; init 40 x 25 text video mode
 ;----------------------------------------------------------------------------------------------------------
 
 call reset_cpu
 call reset_memory
-mov si, 0xe000
-mov di, 0xffff
+mov si, test_program
+call load_program
+
+mov si, PROGRAM
 call print_memory_range
-mov si, new_line
-call PROCEDURES:print_string
-call print_debug_info
+
+call execute
 
 
 jmp $
+;----------------------------------------------------------------------------------------------------------
+;                                  EXECUTE 6502 program - ARGS: none
+;----------------------------------------------------------------------------------------------------------
+execute:                mov si, PROGRAM                     ; point SI to 6502 program
+execute_next:           push ds                             ; preserve current file's variables scope
+                        xor ax, ax                          ; reset AX
+                        mov ds, ax                          ; reset DS
+                        lodsb                               ; load next 6502 program's opcode
+;----------------------------------------------------------------------------------------------------------
+                        cmp al, INS_LDA_IM                  ; LDA #$immediate addressing opcode?
+                        je lda_imm                          ; execute it!
+                        cmp al, 0x00                        ; if no more instructions available
+                        je execute_return                   ; then stop execution
+                        jmp execute_error                   ; otherwise we've got an error
+;----------------------------------------------------------------------------------------------------------
+execute_debug:          call break                          ; break point every instruction (debug only)
+                        jmp execute_next                    ; execute next instruction
+;----------------------------------------------------------------------------------------------------------
+execute_error:          pop ds
+                        push ax                             ; preserve error byte value
+                        mov si, new_line                    ; point SI to new line
+                        call PROCEDURES:print_string        ; print new line
+                        pop ax                              ; restore error byte value
+                        call PROCEDURES:print_byte          ; print byte resulting in error
+                        mov si, instruction_error           ; point SI to instruction error
+                        call PROCEDURES:print_string        ; print error
+                        ret
+;----------------------------------------------------------------------------------------------------------
+execute_return:         pop ds                              ; restore current file's variables scope
+                        mov si, all_done                    ; point SI to success message
+                        call PROCEDURES:print_string        ; print success message
+                        ret                                 ; return from procedure
+;----------------------------------------------------------------------------------------------------------
+lda_imm:                lodsb                               ; AL now holds the immediate data to load
+                        pop ds                              ; hook up local variables
+                        add byte [program_counter], 0x02    ; update program counter
+                        mov byte [register_A], al           ; load immediate data to A register
+                        cmp al, 0x00                        ; if AL is equal to 0
+                        je lda_imm_szf                      ; then set zero flag
+                        test al, 0x80                       ; test negative
+                        jne lda_imm_snf                     ; then set negative flag
+lda_imm_next:           jmp execute_debug                   ; execute next instruction
+lda_imm_szf:            call set_zero_flag                  ; set zero flag
+                        jmp lda_imm_next                    ; resume execution
+lda_imm_snf:            call set_negative_flag              ; set negative flag
+                        jmp lda_imm_next                    ; resume execution
+;----------------------------------------------------------------------------------------------------------
+;                                           SET ZERO FLAG
+;----------------------------------------------------------------------------------------------------------
+set_zero_flag:          or byte [register_P], 0x02          ; set zero flag
+                        ret                                 ; return from procedure
+;----------------------------------------------------------------------------------------------------------
+;                                         SET NEGATIVE FLAG
+;----------------------------------------------------------------------------------------------------------
+set_negative_flag:      or byte [register_P], 0x80          ; set negative flag
+                        ret                                 ; return from procedure
+;----------------------------------------------------------------------------------------------------------
+;                                BREAK AFTER INSTRUCTION - ARGS: none
+;----------------------------------------------------------------------------------------------------------
+break:                  pusha                               ; preserve all registers
+                        mov ah, 0x00                        ; BIOS code to take user input
+                        int 0x16                            ; wait for a key stroke
+                        call print_debug_info               ; print registers
+                        popa                                ; restore all registers
+                        ret                                 ; return from procedure
+;----------------------------------------------------------------------------------------------------------
+;                         LOAD 6502 program - ARGS: SI points to program bytes
+;----------------------------------------------------------------------------------------------------------
+load_program:           push es                             ; preserve ES
+                        xor ax, ax                          ; set AX to 0
+                        mov es, ax                          ; set ES to 0
+                        mov di, PROGRAM                     ; point DI to 6502 program start
+load_program_next_byte: lodsb                               ; read next program byte
+                        cmp al, 0xff                        ; any more bytes to load?
+                        je load_program_return              ; if not then stop
+                        stosb                               ; write next program byte to simulated memory
+                        jmp load_program_next_byte          ; otherwise reset next byte
+load_program_return:    pop es                              ; restore ES
+                        ret                                 ; return from procedure
 ;----------------------------------------------------------------------------------------------------------
 ;                                   RESET MEMORY - ARGS: none
 ;----------------------------------------------------------------------------------------------------------
@@ -258,7 +345,7 @@ reset_cpu:              mov byte [register_A], 0x00         ; reset register A
                         mov byte [register_Y], 0x00         ; reset register Y
                         mov byte [register_P], 0x20         ; reset processor flags (NV-BDIZC)
                         mov byte [stack_pointer], 0xff      ; reset stack pointer
-                        mov word [program_counter], 0xE600  ; reset program counter
+                        mov word [program_counter], PROGRAM ; reset program counter
                         ret                                 ; return from procedure
 ;----------------------------------------------------------------------------------------------------------
 ;                   RESET MEMORY RANGE - ARGS: DI-start address, SI-end address
@@ -294,7 +381,9 @@ print_range_return:     pop es                              ; restore ES
 ;----------------------------------------------------------------------------------------------------------
 ;                                  PRINT DEBUG INFO - ARGS: none
 ;----------------------------------------------------------------------------------------------------------
-print_debug_info:       mov si, print_registers             ; point SI to register names
+print_debug_info:       mov si, new_line                    ; point SI to new_line variable
+                        call PROCEDURES:print_string        ; print new line
+                        mov si, print_registers             ; point SI to register names
                         call PROCEDURES:print_string        ; print register names
                         mov al, byte [register_A]           ; move value of A register to AL
                         call PROCEDURES:print_byte          ; print value of A register
@@ -319,12 +408,22 @@ register_X              db 0x00                             ; register X
 register_Y              db 0x00                             ; register Y
 register_P              db 0x20                             ; processor flags (NV-BDIZC)
 stack_pointer           db 0xff                             ; stack pointer points to 0x01FF
-program_counter         dw 0xE600                           ; address to get where the program code starts
+program_counter         dw PROGRAM                          ; address to get where the program code starts
 ;==========================================================================================================
 ;                                             VARIABLES
 ;==========================================================================================================
-print_registers         db ' A  X  Y PF SP PC', 10, 13, 0  ; all register names
+print_registers         db ' A  X  Y PF SP PC', 10, 13, 0   ; all register names
 new_line                db 10, 13, 0                        ; new line
+instruction_error       db ' is not supported!', 10, 13, 0  ; read instruction error
+all_done                db 10, 13, 'All done!', 10, 13, 0   ; execution success message
+;----------------------------------------------------------------------------------------------------------
+;                                           TEST PROGRAM
+;----------------------------------------------------------------------------------------------------------
+test_program            db 0xa9, 0x00                       ; LDA #$12
+                        db 0xa9, 0xf2                       ; LDA #$12
+                        db 0xa9, 0xe3                       ; LDA #$12
+                        db 0xa9, 0x37                       ; LDA #$12
+                        db 0xff                             ; program end
 ;---------------------------------------------------------------------------------------------------------
                         times 512 - ($-$$) db 0x00          ; BIOS bytes padding
 ;=========================================================================================================
