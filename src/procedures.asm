@@ -12,10 +12,12 @@
 [bits 16]                                                   ; assemble 16-bit code
 [org 0x0000]                                                ; local variable offset
 ;==========================================================================================================
-;                                             GLOBAL PROCEDURES
+;                                           GLOBAL PROCEDURES
 ;==========================================================================================================
 start:                  mov ax, cs                          ; init AX (BOOTSECTOR)
                         mov ds, ax                          ; hook up local variable addresses
+;----------------------------------------------------------------------------------------------------------
+;                                       CLEAR SCREEN - ARGS: none
 ;----------------------------------------------------------------------------------------------------------
 clear_screen:           xor ax, ax                          ; reset AX register
                      	mov ax, 0x0001                      ; set text-mode cursor shape
@@ -25,6 +27,8 @@ clear_screen:           xor ax, ax                          ; reset AX register
                      	int 0x10                            ; update cursor
                         call set_attribute                  ; make character light green
                         retf                                ; return from procedure
+;----------------------------------------------------------------------------------------------------------
+;                               PRINT STRING - ARGS: SI points to string
 ;----------------------------------------------------------------------------------------------------------
 print_string:           cld                                 ; ARGS: SI points to string to print
 print_string_next:      lodsb                               ; read next byte from SOURCE INDEX register
@@ -38,7 +42,9 @@ print_string_return:
                         call set_attribute                  ; make cursor light green
                         retf                                ; return from procedure
 ;----------------------------------------------------------------------------------------------------------
-print_memory:           cld                                 ; ARGS: SI holds the starting address
+;                    PRINT MEMORY - ARGS: SI points to starting memory address
+;----------------------------------------------------------------------------------------------------------
+print_memory:           cld                                 ; clear direction flag
                         call print_address                  ; print hex value stored at SI
                         mov ax, 0x0e3a                      ; colon character
                         int 0x10                            ; print it
@@ -66,7 +72,9 @@ print_memory_return:    mov ax, 0x0e0a                      ; new line character
                         call set_attribute                  ; ensure cursor is green
                         retf                                ; return to edit loop
 ;----------------------------------------------------------------------------------------------------------
-print_byte:             mov dl, al                          ; ARGS: AL holds the argument to print
+;                                 PRINT BYTE - ARGS: AL holds byte to print
+;----------------------------------------------------------------------------------------------------------
+print_byte:             mov dl, al                          ; preserve byte from AL in DL
                         and al, 0xf0                        ; extract 1st nibble => 0xF0 => 1111 0000
                         shr al, 4                           ; shift 1st nibble 4 bits to the right 1111 0000 => 0000 1111
                         call print_hex                      ; print 1st nibble
@@ -78,13 +86,18 @@ print_byte:             mov dl, al                          ; ARGS: AL holds the
                         call set_attribute                  ; ensure cursor is green
                         retf                                ; return from procedure
 ;----------------------------------------------------------------------------------------------------------
-print_word:             mov si, ax                          ; ARGS: AX holds the argument to print
+;                                 PRINT WORD - ARGS: AX holds word to print
+;----------------------------------------------------------------------------------------------------------
+print_word:             mov si, ax                          ; init SI with a word from AX
                         call print_address                  ; print word at DS:SI
                         call set_attribute                  ; ensure cursor is green
                         retf                                ; return from the procedure
 ;==========================================================================================================
 ;                                              LOCAL PROCEDURES
 ;==========================================================================================================
+;----------------------------------------------------------------------------------------------------------
+;                                        SET ATTRIBUTE - ARGS: none
+;----------------------------------------------------------------------------------------------------------
 set_attribute:          push ax                             ; preserve character to print in stack
                         xor ax, ax                          ; reset AX
                         mov ah, 0x09                        ; write character and attribute at cursor position
@@ -92,6 +105,8 @@ set_attribute:          push ax                             ; preserve character
                         int 0x10                            ; set character attribute
                         pop ax                              ; restore character to print from stack
                         ret                                 ; return to the procedure
+;----------------------------------------------------------------------------------------------------------
+;                       PRINT HEX DIGIT - ARGS: AL's low nibble holds digit to print
 ;----------------------------------------------------------------------------------------------------------
 print_hex:              cmp al, 10                          ; distinguish between digits and letters
                         jl digit_to_ascii                   ; convert digit
@@ -105,6 +120,8 @@ print_nibble:           call set_attribute                  ; make character lig
                         mov ah, 0x0e                        ; BIOS code to print a char
                         int 0x10                            ; print character to screen
                         ret                                 ; return from the procedure
+;----------------------------------------------------------------------------------------------------------
+;                                PRINT ADDRESS - ARGS: SI holds address to print
 ;----------------------------------------------------------------------------------------------------------
 print_address:          mov dx, si                          ; preserve address stored in SI to DX
                         mov ax, dx                          ; transfer address from DX to AX

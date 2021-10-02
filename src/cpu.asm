@@ -232,27 +232,24 @@ start:                  mov ax, cs                          ; init AX (BOOTSECTO
                         call PROCEDURES:clear_screen        ; init 40 x 25 text video mode
 ;----------------------------------------------------------------------------------------------------------
 
-; 0x0000_F000    0x0001_0FFF
-
-
-mov di, 0xe000
-mov si, 0xffff
-call reset_memory_range
-
+call reset_cpu
+call reset_memory
 mov si, 0xe000
-mov di, 0xe010
+mov di, 0xffff
 call print_memory_range
-
-
 mov si, new_line
 call PROCEDURES:print_string
-
-call reset_cpu
 call print_debug_info
 
 
 jmp $
-
+;----------------------------------------------------------------------------------------------------------
+;                                   RESET MEMORY - ARGS: none
+;----------------------------------------------------------------------------------------------------------
+reset_memory:           mov di, 0xe000                      ; point DI to simulated memory starting point
+                        mov si, 0xffff                      ; point SI to simulated memory end point
+                        call reset_memory_range             ; reset simulated memory
+                        ret                                 ; return from procedure
 ;----------------------------------------------------------------------------------------------------------
 ;                                     RESET CPU - ARGS: none
 ;----------------------------------------------------------------------------------------------------------
@@ -261,7 +258,7 @@ reset_cpu:              mov byte [register_A], 0x00         ; reset register A
                         mov byte [register_Y], 0x00         ; reset register Y
                         mov byte [register_P], 0x20         ; reset processor flags (NV-BDIZC)
                         mov byte [stack_pointer], 0xff      ; reset stack pointer
-                        mov word [program_counter], 0x0000  ; reset program counter
+                        mov word [program_counter], 0xE600  ; reset program counter
                         ret                                 ; return from procedure
 ;----------------------------------------------------------------------------------------------------------
 ;                   RESET MEMORY RANGE - ARGS: DI-start address, SI-end address
@@ -322,7 +319,7 @@ register_X              db 0x00                             ; register X
 register_Y              db 0x00                             ; register Y
 register_P              db 0x20                             ; processor flags (NV-BDIZC)
 stack_pointer           db 0xff                             ; stack pointer points to 0x01FF
-program_counter         dw 0x0000                           ; address to get where the program code starts
+program_counter         dw 0xE600                           ; address to get where the program code starts
 ;==========================================================================================================
 ;                                             VARIABLES
 ;==========================================================================================================
