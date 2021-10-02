@@ -245,6 +245,7 @@ mov si, test_program
 call load_program
 
 mov si, PROGRAM
+mov di, PROGRAM + 0x28
 call print_memory_range
 
 call execute
