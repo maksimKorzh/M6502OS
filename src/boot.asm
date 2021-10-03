@@ -16,7 +16,7 @@
 ;==========================================================================================================
 %define          BOOTSECTOR 0x7c0                           ; boot sector address in RAM
 %define          PROCEDURES 0x7e0                           ; global procedures address
-%define           SIMULATOR 0x800                           ; CPU simulator address
+%define           SIMULATOR 0x1000                          ; CPU simulator address
 ;==========================================================================================================
 ;                                                BOOTLOADER
 ;==========================================================================================================
@@ -37,7 +37,7 @@ load_simulator:         mov ax, SIMULATOR                   ; init AX segment
                         mov es, ax                          ; init ES register
                         mov bx, 0                           ; init local offset within the segment
                         mov cl, 3                           ; starting sector to load data from
-                        mov al, 1                           ; number of sectors to read
+                        mov al, 2                           ; number of sectors to read
                         call boot_load_sector               ; read sector from USB flash drive
 ;----------------------------------------------------------------------------------------------------------
 run_simulator:          jmp SIMULATOR:0x0000                ; jump to SIMULATOR simulator code in RAM

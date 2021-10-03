@@ -240,49 +240,119 @@ start:                  mov ax, cs                          ; init AX (CPU addre
                         call PROCEDURES:clear_screen        ; init 40 x 25 text video mode
 ;----------------------------------------------------------------------------------------------------------
 
-call reset_cpu
-call reset_memory
-mov si, test_program
-call load_program
-
-push es
-xor ax, ax
-mov es, ax
-mov di, MEMORY
-
-mov al, 0x23
-stosb
-
-mov al, 0xe3
-stosb
-
-mov al, 0x00
-stosb
-
-mov al, 0x45
-stosb
-
-pop es
-
-mov si, PROGRAM
-mov di, PROGRAM + 0x28
-call print_memory_range
-
-mov si, new_line
-call PROCEDURES:print_string
-
-mov si, MEMORY
-mov di, MEMORY + 0x28
-call print_memory_range
-
-call print_debug_info
-
-call execute
-;call print_debug_info
-; NV-BDIZC
-; 0010000
-
+call test_001
 jmp $
+
+;==========================================================================================================
+;                                             UNIT TESTING
+;==========================================================================================================
+;----------------------------------------------------------------------------------------------------------
+;                                    LDA - immediate addressing mode
+;----------------------------------------------------------------------------------------------------------
+; LDA IMMEDIATE            
+                        ; LDA ZERO PAGE
+                        ;db 0xa5, 0x00                       ; LDA #$12
+                        ;db 0xa5, 0x01                       ; LDA #$12
+                        ;db 0xa5, 0x02                       ; LDA #$12
+                        ;db 0xa5, 0x03                       ; LDA #$12
+                        ;db 0xff                             ; program end
+
+
+;mov word [test_program + 2], 0x00a9 ; LDA #$00
+                        ;mov word [test_program + 4], 0xe5a9 ; LDA #$e5
+                        ;mov word [test_program + 6], 0x65a9 ; LDA #$65
+
+test_001:               call reset_cpu                      ; reset 6502 CPU
+                        call reset_memory                   ; reset 6502 memory
+                        mov word [test_program], 0x24a9     ; LDA #$24
+                        mov si, test_program                ; point SI to test program
+                        call load_program                   ; load test program to 6502 memory
+                        mov si, test_lda_imm                ; point SI to test_lda_imm
+                        call PROCEDURES:print_string        ; print test_lda_imm string
+                        mov si, machine_code                ; point SI to machine_code string
+                        call PROCEDURES:print_string        ; print machine code string
+                        mov si, PROGRAM                     ; 6502 memory range starting point
+                        mov di, PROGRAM + 0x28              ; 6502 memory range end point
+                        call print_memory_range             ; print 6502 program source bytes
+                        mov si, new_line                    ; point SI to new line
+                        call PROCEDURES:print_string        ; print new line
+                        mov si, memory_monitor              ; point SI to memory_monitor string
+                        call PROCEDURES:print_string        ; print memory_monitor string
+                        mov si, MEMORY                      ; 6502 memory range starting point
+                        mov di, MEMORY + 0x28               ; 6502 memory range end point
+                        call print_memory_range             ; print 6502 memory bytes
+                        call execute                        ; execute instruction
+                        call print_debug_info               ; print registers
+                        cmp byte [register_A], 0x24         ; test A register
+                        jne test_error_register             ; failure case, stop tests
+                        cmp byte [register_P], 0x20         ; test processor flags
+                        jne test_error_flags                ; failure case, stop tests
+                        cmp byte [stack_pointer], 0xff      ; test stack pointer
+                        jne test_error_sp                   ; failure case, stop tests
+                        cmp byte [program_counter], 0x0602  ; test program counter
+                        jne test_error_pc                   ; failure case, stop tests
+                        mov si, test_passed                 ; point SI to test_passed string
+                        call PROCEDURES:print_string        ; print test_passed string
+                        jmp test_002                        ; jump to next test
+;----------------------------------------------------------------------------------------------------------
+test_002:
+;----------------------------------------------------------------------------------------------------------
+tests_completed:        mov si, all_done                    ; point SI to success message
+                        call PROCEDURES:print_string        ; print success message
+                        ret                                 ; return from procedure
+;----------------------------------------------------------------------------------------------------------
+test_error_register:    mov si, test_failed_register        ; point SI to test_failed_register string
+                        call PROCEDURES:print_string        ; print test_failed_register message
+                        jmp $                               ; stop here
+;----------------------------------------------------------------------------------------------------------
+test_error_flags:       mov si, test_failed_flags           ; point SI to test_failed_flag string
+                        call PROCEDURES:print_string        ; print test_failed_flags message
+                        jmp $                               ; stop here
+;----------------------------------------------------------------------------------------------------------
+test_error_sp:          mov si, test_failed_SP              ; point SI to test_failed_SP string
+                        call PROCEDURES:print_string        ; print test_failed_sp message
+                        jmp $                               ; stop here
+;----------------------------------------------------------------------------------------------------------
+test_error_pc:          mov si, test_failed_PC              ; point SI to test_failed_PC string
+                        call PROCEDURES:print_string        ; print test_failed_pc message
+                        jmp $                               ; stop here
+;----------------------------------------------------------------------------------------------------------
+
+                        ;push es
+                        ;xor ax, ax
+                        ;mov es, ax
+                        ;mov di, MEMORY
+
+                        ;mov al, 0x23
+                        ;stosb
+
+                        ;mov al, 0xe3
+                        ;stosb
+
+                        ;mov al, 0x00
+                        ;stosb
+
+                        ;mov al, 0x45
+                        ;stosb
+
+                        ;pop es
+
+
+
+                        ;mov si, PROGRAM
+                        ;mov di, PROGRAM + 0x28
+                        ;call print_memory_range
+
+                        ;mov si, new_line
+                        ;call PROCEDURES:print_string
+
+                        ;mov si, MEMORY
+                        ;mov di, MEMORY + 0x28
+                        ;call print_memory_range
+
+                        ;call print_debug_info
+
+                        ;call execute
 ;----------------------------------------------------------------------------------------------------------
 ;                                  EXECUTE 6502 program - ARGS: none
 ;----------------------------------------------------------------------------------------------------------
@@ -300,7 +370,7 @@ execute_next:           push ds                             ; preserve current f
                         je execute_return                   ; then stop execution
                         jmp execute_error                   ; otherwise we've got an error
 ;----------------------------------------------------------------------------------------------------------
-execute_debug:          call break                          ; break point every instruction (debug only)
+execute_debug:          ;call break                          ; break point every instruction (debug only)
                         jmp execute_next                    ; execute next instruction
 ;----------------------------------------------------------------------------------------------------------
 execute_error:          pop ds
@@ -314,8 +384,6 @@ execute_error:          pop ds
                         ret
 ;----------------------------------------------------------------------------------------------------------
 execute_return:         pop ds                              ; restore current file's variables scope
-                        mov si, all_done                    ; point SI to success message
-                        call PROCEDURES:print_string        ; print success message
                         ret                                 ; return from procedure
 ;----------------------------------------------------------------------------------------------------------
 ;                                  LDA - immediate addressing mode
@@ -487,27 +555,27 @@ register_P              db 0x20                             ; processor flags (N
 stack_pointer           db 0xff                             ; stack pointer points to 0x01FF
 program_counter         dw PROGRAM                          ; address to get where the program code starts
 ;==========================================================================================================
-;                                             VARIABLES
+;                                             MESSAGES
 ;==========================================================================================================
-print_registers         db ' A  X  Y PF SP PC', 10, 13, 0   ; all register names
+print_registers         db ' A  X  Y PF SP PC'              ; all register names
+                        db '    NV-BDIZC', 10, 13, 0        ; all flags
 new_line                db 10, 13, 0                        ; new line
 instruction_error       db ' is not supported!', 10, 13, 0  ; read instruction error
 all_done                db 10, 13, 'All done!', 10, 13, 0   ; execution success message
+machine_code            db '6502 machine code:', 10, 13, 0  ; debugging string
+memory_monitor          db '6502 memory dump:', 10, 13, 0   ; debugging string
+test_lda_imm            db 'LDA Immediate addressing:'      ; debugging string
+                        db 10, 13, 10, 13, 0                ; debugging string
+test_passed             db 'ok', 10, 13, 0                  ; debugging string
+test_failed_register    db 'register failed!', 10, 13, 0    ; debugging string
+test_failed_flags       db 'flags failed!', 10, 13, 0       ; debugging string
+test_failed_SP          db 'SP failed!', 10, 13, 0          ; debugging string
+test_failed_PC          db 'PC failed!', 10, 13, 0          ; debugging string
 ;----------------------------------------------------------------------------------------------------------
 ;                                           TEST PROGRAM
 ;----------------------------------------------------------------------------------------------------------
-test_program:           ; LDA IMMEDIATE            
-                        ;db 0xa9, 0x24                       ; LDA #$12
-                        ;db 0xa9, 0x00                       ; LDA #$12
-                        ;db 0xa9, 0xe5                       ; LDA #$12
-                        ;db 0xa9, 0x65                       ; LDA #$12
-                        ;db 0xff                             ; program end
-                        ; LDA ZERO PAGE
-                        db 0xa5, 0x00                       ; LDA #$12
-                        db 0xa5, 0x01                       ; LDA #$12
-                        db 0xa5, 0x02                       ; LDA #$12
-                        db 0xa5, 0x03                       ; LDA #$12
+test_program:  times 16 db 0x00                             ; program bytes placeholder
                         db 0xff                             ; program end
 ;---------------------------------------------------------------------------------------------------------
-                        times 512 - ($-$$) db 0x00          ; BIOS bytes padding
+                        times (512*2) - ($-$$) db 0x00      ; BIOS bytes padding
 ;=========================================================================================================
