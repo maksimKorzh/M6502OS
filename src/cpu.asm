@@ -27,6 +27,7 @@
 ;                                                   LOCALS
 ;----------------------------------------------------------------------------------------------------------
 %define                 PROGRAM 0xe600                      ; temp starting point for a 6502 program
+%define                 MEMORY 0xe000                       ; 6502 simulated memory starting address
 ;==========================================================================================================
 ;                                                 OPCODES
 ;==========================================================================================================
@@ -34,7 +35,7 @@
 ;                                             LOAD OPERATIONS
 ;----------------------------------------------------------------------------------------------------------
 %define                 INS_LDA_IM 0xa9
-%define                 INS_LDA_ZP 0xA5
+%define                 INS_LDA_ZP 0xa5
 %define                 INS_LDA_ZPX 0xB5
 %define                 INS_LDA_ABS 0xAD
 %define                 INS_LDA_ABSX 0xBD
@@ -244,12 +245,42 @@ call reset_memory
 mov si, test_program
 call load_program
 
+push es
+xor ax, ax
+mov es, ax
+mov di, MEMORY
+
+mov al, 0x23
+stosb
+
+mov al, 0xe3
+stosb
+
+mov al, 0x00
+stosb
+
+mov al, 0x45
+stosb
+
+pop es
+
 mov si, PROGRAM
 mov di, PROGRAM + 0x28
 call print_memory_range
 
-call execute
+mov si, new_line
+call PROCEDURES:print_string
 
+mov si, MEMORY
+mov di, MEMORY + 0x28
+call print_memory_range
+
+call print_debug_info
+
+call execute
+;call print_debug_info
+; NV-BDIZC
+; 0010000
 
 jmp $
 ;----------------------------------------------------------------------------------------------------------
@@ -261,8 +292,10 @@ execute_next:           push ds                             ; preserve current f
                         mov ds, ax                          ; reset DS
                         lodsb                               ; load next 6502 program's opcode
 ;----------------------------------------------------------------------------------------------------------
-                        cmp al, INS_LDA_IM                  ; LDA #$immediate addressing opcode?
-                        je lda_imm                          ; execute it!
+                        cmp al, INS_LDA_IM                  ; LDA immediate addressing opcode?
+                        je lda_imm                          ; if so then execute it
+                        cmp al, INS_LDA_ZP                  ; LDA zero page addressing opcode?
+                        je lda_zp                           ; if so then execute it
                         cmp al, 0x00                        ; if no more instructions available
                         je execute_return                   ; then stop execution
                         jmp execute_error                   ; otherwise we've got an error
@@ -285,19 +318,62 @@ execute_return:         pop ds                              ; restore current fi
                         call PROCEDURES:print_string        ; print success message
                         ret                                 ; return from procedure
 ;----------------------------------------------------------------------------------------------------------
+;                                  LDA - immediate addressing mode
+;----------------------------------------------------------------------------------------------------------
 lda_imm:                lodsb                               ; AL now holds the immediate data to load
                         pop ds                              ; hook up local variables
+                        call clear_zero_flag                ; clear zero flag
+                        call clear_negative_flag            ; clear negative flag
                         add byte [program_counter], 0x02    ; update program counter
                         mov byte [register_A], al           ; load immediate data to A register
                         cmp al, 0x00                        ; if AL is equal to 0
-                        je lda_imm_szf                      ; then set zero flag
+                        je set_flags_szf                    ; then set zero flag
                         test al, 0x80                       ; test negative
-                        jne lda_imm_snf                     ; then set negative flag
-lda_imm_next:           jmp execute_debug                   ; execute next instruction
-lda_imm_szf:            call set_zero_flag                  ; set zero flag
-                        jmp lda_imm_next                    ; resume execution
-lda_imm_snf:            call set_negative_flag              ; set negative flag
-                        jmp lda_imm_next                    ; resume execution
+                        jne set_flags_snf                   ; then set negative flag
+                        jmp execute_debug                   ; execute next instruction
+;----------------------------------------------------------------------------------------------------------
+;                                        LDA - zero page mode
+;----------------------------------------------------------------------------------------------------------
+lda_zp:                 lodsb                               ; AL holds ZP address to load value from
+                        pop ds                              ; hook up local variables
+                        call clear_zero_flag                ; clear zero flag
+                        call clear_negative_flag            ; clear negative flag
+                        add byte [program_counter], 0x02    ; update program counter
+                        xor ah, ah                          ; reset AX
+                        add ax, MEMORY                      ; get ZP address in simulated memory
+                        push ds                             ; preserve DS
+                        push ax                             ; preserve ZP address
+                        xor ax, ax                          ; reset AX
+                        mov ds, ax                          ; reset DS
+                        pop ax                              ; restore ZP address
+                        push si                             ; preserve current 6502 program byte pointer
+                        mov si, ax                          ; point SI to ZP address
+                        lodsb                               ; get byte from ZP address
+                        pop si                              ; restore current 6502 program byte pointer
+                        pop ds                              ; hook up local variables
+                        mov byte [register_A], al           ; load ZP data to A register
+                        cmp al, 0x00                        ; if AL is equal to 0
+                        je set_flags_szf                    ; then set zero flag
+                        test al, 0x80                       ; test negative
+                        jne set_flags_snf                   ; then set negative flag
+                        jmp execute_debug                   ; execute next instruction
+;----------------------------------------------------------------------------------------------------------
+;                                     SET ZERO/NEGATIVE FLAGS
+;----------------------------------------------------------------------------------------------------------
+set_flags_szf:          call set_zero_flag                  ; set zero flag
+                        jmp execute_debug                   ; resume execution
+set_flags_snf:          call set_negative_flag              ; set negative flag
+                        jmp execute_debug                   ; resume execution
+;----------------------------------------------------------------------------------------------------------
+;                                          CLEAR ZERO FLAG
+;----------------------------------------------------------------------------------------------------------
+clear_zero_flag:        and byte [register_P], 0xfd         ; set zero flag
+                        ret                                 ; return from procedure
+;----------------------------------------------------------------------------------------------------------
+;                                        CLEAR NEGATIVE FLAG
+;----------------------------------------------------------------------------------------------------------
+clear_negative_flag:    and byte [register_P], 0x7f         ; set negative flag
+                        ret                                 ; return from procedure
 ;----------------------------------------------------------------------------------------------------------
 ;                                           SET ZERO FLAG
 ;----------------------------------------------------------------------------------------------------------
@@ -420,10 +496,17 @@ all_done                db 10, 13, 'All done!', 10, 13, 0   ; execution success 
 ;----------------------------------------------------------------------------------------------------------
 ;                                           TEST PROGRAM
 ;----------------------------------------------------------------------------------------------------------
-test_program            db 0xa9, 0x00                       ; LDA #$12
-                        db 0xa9, 0xf2                       ; LDA #$12
-                        db 0xa9, 0xe3                       ; LDA #$12
-                        db 0xa9, 0x37                       ; LDA #$12
+test_program:           ; LDA IMMEDIATE            
+                        ;db 0xa9, 0x24                       ; LDA #$12
+                        ;db 0xa9, 0x00                       ; LDA #$12
+                        ;db 0xa9, 0xe5                       ; LDA #$12
+                        ;db 0xa9, 0x65                       ; LDA #$12
+                        ;db 0xff                             ; program end
+                        ; LDA ZERO PAGE
+                        db 0xa5, 0x00                       ; LDA #$12
+                        db 0xa5, 0x01                       ; LDA #$12
+                        db 0xa5, 0x02                       ; LDA #$12
+                        db 0xa5, 0x03                       ; LDA #$12
                         db 0xff                             ; program end
 ;---------------------------------------------------------------------------------------------------------
                         times 512 - ($-$$) db 0x00          ; BIOS bytes padding
