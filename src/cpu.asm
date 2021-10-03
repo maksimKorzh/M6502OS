@@ -240,7 +240,7 @@ start:                  mov ax, cs                          ; init AX (CPU addre
                         call PROCEDURES:clear_screen        ; init 40 x 25 text video mode
 ;----------------------------------------------------------------------------------------------------------
 
-call test_001
+call unit_tests
 jmp $
 
 ;==========================================================================================================
@@ -249,6 +249,16 @@ jmp $
 ;----------------------------------------------------------------------------------------------------------
 ;                                    LDA - immediate addressing mode
 ;----------------------------------------------------------------------------------------------------------
+
+                        ;mov si, new_line                    ; point SI to new line
+                        ;call PROCEDURES:print_string        ; print new line
+                        ;mov si, memory_monitor              ; point SI to memory_monitor string
+                        ;call PROCEDURES:print_string        ; print memory_monitor string
+                        ;mov si, MEMORY                      ; 6502 memory range starting point
+                        ;mov di, MEMORY + 0x28               ; 6502 memory range end point
+                        ;call print_memory_range             ; print 6502 memory bytes
+
+
 ; LDA IMMEDIATE            
                         ; LDA ZERO PAGE
                         ;db 0xa5, 0x00                       ; LDA #$12
@@ -257,14 +267,13 @@ jmp $
                         ;db 0xa5, 0x03                       ; LDA #$12
                         ;db 0xff                             ; program end
 
-
-;mov word [test_program + 2], 0x00a9 ; LDA #$00
-                        ;mov word [test_program + 4], 0xe5a9 ; LDA #$e5
                         ;mov word [test_program + 6], 0x65a9 ; LDA #$65
 
-test_001:               call reset_cpu                      ; reset 6502 CPU
+unit_tests:             call reset_cpu                      ; reset 6502 CPU
                         call reset_memory                   ; reset 6502 memory
-                        mov word [test_program], 0x24a9     ; LDA #$24
+;----------------------------------------------------------------------------------------------------------
+test_001:               mov byte [register_P], 0xa2         ; set zero and negative flags to true
+                        mov word [test_program], 0x24a9     ; LDA #$00
                         mov si, test_program                ; point SI to test program
                         call load_program                   ; load test program to 6502 memory
                         mov si, test_lda_imm                ; point SI to test_lda_imm
@@ -272,30 +281,80 @@ test_001:               call reset_cpu                      ; reset 6502 CPU
                         mov si, machine_code                ; point SI to machine_code string
                         call PROCEDURES:print_string        ; print machine code string
                         mov si, PROGRAM                     ; 6502 memory range starting point
-                        mov di, PROGRAM + 0x28              ; 6502 memory range end point
+                        mov di, PROGRAM + 0x08              ; 6502 memory range end point
                         call print_memory_range             ; print 6502 program source bytes
-                        mov si, new_line                    ; point SI to new line
-                        call PROCEDURES:print_string        ; print new line
-                        mov si, memory_monitor              ; point SI to memory_monitor string
-                        call PROCEDURES:print_string        ; print memory_monitor string
-                        mov si, MEMORY                      ; 6502 memory range starting point
-                        mov di, MEMORY + 0x28               ; 6502 memory range end point
-                        call print_memory_range             ; print 6502 memory bytes
+                        mov si, cpu_before_execution        ; point SI to cpu_before_execution string
+                        call PROCEDURES:print_string        ; print cpu_before_execution
+                        call print_debug_info               ; print registers
                         call execute                        ; execute instruction
+                        mov si, cpu_after_execution         ; point SI to cpu_after_execution string
+                        call PROCEDURES:print_string        ; print cpu_after_execution
                         call print_debug_info               ; print registers
                         cmp byte [register_A], 0x24         ; test A register
                         jne test_error_register             ; failure case, stop tests
                         cmp byte [register_P], 0x20         ; test processor flags
                         jne test_error_flags                ; failure case, stop tests
-                        cmp byte [stack_pointer], 0xff      ; test stack pointer
-                        jne test_error_sp                   ; failure case, stop tests
-                        cmp byte [program_counter], 0x0602  ; test program counter
+                        cmp byte [program_counter], 0x02    ; test program counter
                         jne test_error_pc                   ; failure case, stop tests
                         mov si, test_passed                 ; point SI to test_passed string
                         call PROCEDURES:print_string        ; print test_passed string
                         jmp test_002                        ; jump to next test
 ;----------------------------------------------------------------------------------------------------------
-test_002:
+test_002:               mov word [test_program], 0x00a9     ; LDA #$24
+                        mov si, test_program                ; point SI to test program
+                        call load_program                   ; load test program to 6502 memory
+                        mov si, test_lda_imm                ; point SI to test_lda_imm
+                        call PROCEDURES:print_string        ; print test_lda_imm string
+                        mov si, machine_code                ; point SI to machine_code string
+                        call PROCEDURES:print_string        ; print machine code string
+                        mov si, PROGRAM                     ; 6502 memory range starting point
+                        mov di, PROGRAM + 0x08              ; 6502 memory range end point
+                        call print_memory_range             ; print 6502 program source bytes
+                        mov si, cpu_before_execution        ; point SI to cpu_before_execution string
+                        call PROCEDURES:print_string        ; print cpu_before_execution
+                        call print_debug_info               ; print registers
+                        call execute                        ; execute instruction
+                        mov si, cpu_after_execution         ; point SI to cpu_after_execution string
+                        call PROCEDURES:print_string        ; print cpu_after_execution
+                        call print_debug_info               ; print registers
+                        cmp byte [register_A], 0x00         ; test A register
+                        jne test_error_register             ; failure case, stop tests
+                        cmp byte [register_P], 0x22         ; test processor flags
+                        jne test_error_flags                ; failure case, stop tests
+                        cmp byte [program_counter], 0x04    ; test program counter
+                        jne test_error_pc                   ; failure case, stop tests
+                        mov si, test_passed                 ; point SI to test_passed string
+                        call PROCEDURES:print_string        ; print test_passed string
+                        jmp test_003                        ; jump to next test
+;----------------------------------------------------------------------------------------------------------
+test_003:               mov word [test_program], 0xe5a9     ; LDA #$e5
+                        mov si, test_program                ; point SI to test program
+                        call load_program                   ; load test program to 6502 memory
+                        mov si, test_lda_imm                ; point SI to test_lda_imm
+                        call PROCEDURES:print_string        ; print test_lda_imm string
+                        mov si, machine_code                ; point SI to machine_code string
+                        call PROCEDURES:print_string        ; print machine code string
+                        mov si, PROGRAM                     ; 6502 memory range starting point
+                        mov di, PROGRAM + 0x08              ; 6502 memory range end point
+                        call print_memory_range             ; print 6502 program source bytes
+                        mov si, cpu_before_execution        ; point SI to cpu_before_execution string
+                        call PROCEDURES:print_string        ; print cpu_before_execution
+                        call print_debug_info               ; print registers
+                        call execute                        ; execute instruction
+                        mov si, cpu_after_execution         ; point SI to cpu_after_execution string
+                        call PROCEDURES:print_string        ; print cpu_after_execution
+                        call print_debug_info               ; print registers
+                        cmp byte [register_A], 0xe5         ; test A register
+                        jne test_error_register             ; failure case, stop tests
+                        cmp byte [register_P], 0xa0         ; test processor flags
+                        jne test_error_flags                ; failure case, stop tests
+                        cmp byte [program_counter], 0x06    ; test program counter
+                        jne test_error_pc                   ; failure case, stop tests
+                        mov si, test_passed                 ; point SI to test_passed string
+                        call PROCEDURES:print_string        ; print test_passed string
+                        jmp test_004                        ; jump to next test
+;----------------------------------------------------------------------------------------------------------
+test_004:
 ;----------------------------------------------------------------------------------------------------------
 tests_completed:        mov si, all_done                    ; point SI to success message
                         call PROCEDURES:print_string        ; print success message
@@ -559,23 +618,43 @@ program_counter         dw PROGRAM                          ; address to get whe
 ;==========================================================================================================
 print_registers         db ' A  X  Y PF SP PC'              ; all register names
                         db '    NV-BDIZC', 10, 13, 0        ; all flags
+;----------------------------------------------------------------------------------------------------------
 new_line                db 10, 13, 0                        ; new line
+;----------------------------------------------------------------------------------------------------------
 instruction_error       db ' is not supported!', 10, 13, 0  ; read instruction error
+;----------------------------------------------------------------------------------------------------------
 all_done                db 10, 13, 'All done!', 10, 13, 0   ; execution success message
+;----------------------------------------------------------------------------------------------------------
 machine_code            db '6502 machine code:', 10, 13, 0  ; debugging string
+;----------------------------------------------------------------------------------------------------------
 memory_monitor          db '6502 memory dump:', 10, 13, 0   ; debugging string
-test_lda_imm            db 'LDA Immediate addressing:'      ; debugging string
+;----------------------------------------------------------------------------------------------------------
+test_lda_imm            db 10, 13                           ; debugging string
+                        db '-------------------------',     ; debugging string
+                        db 10, 13                           ; debugging string
+                        db 'LDA Immediate addressing:'      ; debugging string
+                        db 10, 13                           ; debugging string
+                        db '-------------------------'      ; debugging string
                         db 10, 13, 10, 13, 0                ; debugging string
+;----------------------------------------------------------------------------------------------------------
 test_passed             db 'ok', 10, 13, 0                  ; debugging string
+;----------------------------------------------------------------------------------------------------------
 test_failed_register    db 'register failed!', 10, 13, 0    ; debugging string
+;----------------------------------------------------------------------------------------------------------
 test_failed_flags       db 'flags failed!', 10, 13, 0       ; debugging string
+;----------------------------------------------------------------------------------------------------------
 test_failed_SP          db 'SP failed!', 10, 13, 0          ; debugging string
+;----------------------------------------------------------------------------------------------------------
 test_failed_PC          db 'PC failed!', 10, 13, 0          ; debugging string
+;----------------------------------------------------------------------------------------------------------
+cpu_before_execution    db 10, 13, 'Before execution:', 0   ; debugging string
+;----------------------------------------------------------------------------------------------------------
+cpu_after_execution     db 10, 13, 'After execution:', 0    ; debugging string
 ;----------------------------------------------------------------------------------------------------------
 ;                                           TEST PROGRAM
 ;----------------------------------------------------------------------------------------------------------
 test_program:  times 16 db 0x00                             ; program bytes placeholder
                         db 0xff                             ; program end
 ;---------------------------------------------------------------------------------------------------------
-                        times (512*2) - ($-$$) db 0x00      ; BIOS bytes padding
+                        times (512*3) - ($-$$) db 0x00      ; BIOS bytes padding
 ;=========================================================================================================
