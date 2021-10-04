@@ -539,7 +539,83 @@ test_008:               mov byte [register_Y], 0x02         ; set register Y off
                         call PROCEDURES:print_string        ; print test_passed string
                         jmp test_009                        ; jump to next test
 ;----------------------------------------------------------------------------------------------------------
-test_009:
+test_009:               mov byte [register_X], 0x04         ; set register Y offset
+                        mov word [test_program], 0x20a1     ; little endian address: 04 01
+                        mov byte [test_program + 2], 0x00   ; reset previous instructions
+                        mov si, test_program                ; point SI to test program
+                        call load_program                   ; load test program to 6502 memory
+                        mov si, test_lda_indexed_indir      ; point SI to test_lda_imm
+                        call PROCEDURES:print_string        ; print test_lda_imm string
+                        mov si, machine_code                ; point SI to machine_code string
+                        call PROCEDURES:print_string        ; print machine code string
+                        mov si, PROGRAM                     ; 6502 memory range starting point
+                        mov di, PROGRAM + 0x08              ; 6502 memory range end point
+                        call print_memory_range             ; print 6502 program source bytes
+                        push ds                             ; preserve DS
+                        xor ax, ax                          ; reset AX
+                        mov ds, ax                          ; reset DS
+                        mov si, MEMORY + 0x24               ; point SI to 6502 simulated memory
+                        mov word [ds:si], 0x1074            ; init value in 6502 simulated memory
+                        mov si, MEMORY + 0x1074             ; point SI to indirect memory address
+                        mov byte [ds:si], 0x93              ; set value at indirect memory address
+                        pop ds                              ; hook up local variables
+                        mov si, new_line                    ; point SI to new line
+                        call PROCEDURES:print_string        ; print new line
+                        mov si, memory_monitor              ; point SI to memory_monitor string
+                        call PROCEDURES:print_string        ; print memory_monitor string
+                        mov si, MEMORY                      ; 6502 memory range starting point
+                        mov di, MEMORY + 0x28               ; 6502 memory range end point
+                        call print_memory_range             ; print 6502 memory bytes
+                        mov si, new_line                    ; point SI to new line
+                        call PROCEDURES:print_string        ; print new line
+                        mov si, memory_monitor              ; point SI to memory_monitor string
+                        call PROCEDURES:print_string        ; print memory_monitor string
+                        mov si, MEMORY + 0x1070             ; 6502 memory range starting point
+                        mov di, MEMORY + 0x1078             ; 6502 memory range end point
+                        call print_memory_range             ; print 6502 memory bytes
+                        mov si, cpu_before_execution        ; point SI to cpu_before_execution string
+                        call PROCEDURES:print_string        ; print cpu_before_execution
+                        call print_debug_info               ; print registers
+                        call execute                        ; execute instruction
+                        mov si, cpu_after_execution         ; point SI to cpu_after_execution string
+                        call PROCEDURES:print_string        ; print cpu_after_execution
+                        call print_debug_info               ; print registers
+                        cmp byte [register_A], 0x93         ; test A register
+                        jne test_error_register             ; failure case, stop tests
+                        cmp byte [register_P], 0xa0         ; test processor flags
+                        jne test_error_flags                ; failure case, stop tests
+                        cmp byte [program_counter], 0x15    ; test program counter
+                        jne test_error_pc                   ; failure case, stop tests
+                        mov si, test_passed                 ; point SI to test_passed string
+                        call PROCEDURES:print_string        ; print test_passed string
+                        jmp test_010
+
+; 0024: 74 20
+;lda #$74
+;sta $24
+;lda #$20
+;sta $25
+
+;lda #$93
+;sta $2074
+;txa
+;ldx #$04
+;lda ($20,x) ; A=93 fetched from 2074
+            ; 20 + x = 24
+            ; val at $24 = 2074 (little endian 7420)
+
+;lda #$94
+;sta $2078
+;ldy #$04
+;lda ($24),y ; A=94 fetched from 2074 + Y
+            ; INDIRECT INDEXED
+
+;So the difference is following:
+;Indexed indirect uses X to adjust index
+;Indirect indexed uses Y to adjust dest address
+
+;----------------------------------------------------------------------------------------------------------
+test_010:
 ;----------------------------------------------------------------------------------------------------------
 tests_completed:        mov si, all_done                    ; point SI to success message
                         call PROCEDURES:print_string        ; print success message
@@ -581,6 +657,8 @@ execute_next:           push ds                             ; preserve current f
                         je lda_abs_x                        ; if so then execute it
                         cmp al, INS_LDA_ABSY                ; LDA absolute addressing + Y offset opcode?
                         je lda_abs_y                        ; if so then execute it
+                        cmp al, INS_LDA_INDX                ; LDA indexed indirect addressing opcode?
+                        je lda_indexed_indirect             ; if so then execute it
                         cmp al, 0x00                        ; if no more instructions available
                         je execute_return                   ; then stop execution
                         jmp execute_error                   ; otherwise we've got an error
@@ -693,6 +771,23 @@ lda_abs_y:              lodsw                               ; AX holds absolute 
                         jne set_flags_snf                   ; then set negative flag
                         jmp execute_debug                   ; execute next instruction             
 ;----------------------------------------------------------------------------------------------------------
+;                                LDA ($ZP,X) - indexed indirect mode
+;----------------------------------------------------------------------------------------------------------
+lda_indexed_indirect:   lodsb                               ; AL holds ZP address to load value from
+                        pop ds                              ; hook up local variables
+                        call clear_zero_flag                ; clear zero flag
+                        call clear_negative_flag            ; clear negative flag
+                        add byte [program_counter], 0x02    ; update program counter                        
+                        add al, byte [register_X]           ; add offset from X register to zero page
+                        call get_indexed_indirect           ; get value from indexed indirect
+                        mov byte [register_A], al           ; load ZP data to A register
+                        cmp al, 0x00                        ; if AL is equal to 0
+                        je set_flags_szf                    ; then set zero flag
+                        test al, 0x80                       ; test negative
+                        jne set_flags_snf                   ; then set negative flag
+                        jmp execute_debug                   ; execute next instruction             
+
+;----------------------------------------------------------------------------------------------------------
 ;                      ADDRESSING MODES - ARGS: none (returns ZP value in AL)
 ;----------------------------------------------------------------------------------------------------------
 get_zp_val:             xor ah, ah                          ; reset AX
@@ -718,6 +813,23 @@ get_abs_val:            add ax, MEMORY                      ; get ZP address in 
                         push si                             ; preserve current 6502 program byte pointer
                         mov si, ax                          ; point SI to ZP address
                         lodsb                               ; get byte from ZP address
+                        pop si                              ; restore current 6502 program byte pointer
+                        pop ds                              ; hook up local variables
+                        ret                                 ; return from procedure
+;----------------------------------------------------------------------------------------------------------
+get_indexed_indirect:   xor ah, ah                          ; reset AX
+                        add ax, MEMORY                      ; get ZP address in simulated memory                        
+                        push ds                             ; preserve DS
+                        push ax                             ; preserve ZP address
+                        xor ax, ax                          ; reset AX
+                        mov ds, ax                          ; reset DS
+                        pop ax                              ; restore ZP address
+                        push si                             ; preserve current 6502 program byte pointer
+                        mov si, ax                          ; point SI to ZP address
+                        lodsw                               ; get byte from ZP address
+                        mov si, ax                          ; point SI to indexed indirect address
+                        add si, MEMORY                      ; calculate indirect memory address
+                        lodsb                               ; fetch byte from there                        
                         pop si                              ; restore current 6502 program byte pointer
                         pop ds                              ; hook up local variables
                         ret                                 ; return from procedure
@@ -914,6 +1026,14 @@ test_lda_abs_y          db 10, 13                           ; debugging string
                         db '-------------------------'      ; debugging string
                         db 10, 13, 10, 13, 0                ; debugging string
 ;----------------------------------------------------------------------------------------------------------
+test_lda_indexed_indir: db 10, 13                           ; debugging string
+                        db '-------------------------',     ; debugging string
+                        db 10, 13                           ; debugging string
+                        db 'LDA ($ZP,X) addressing:'        ; debugging string
+                        db 10, 13                           ; debugging string
+                        db '-------------------------'      ; debugging string
+                        db 10, 13, 10, 13, 0                ; debugging string
+;----------------------------------------------------------------------------------------------------------
 test_passed             db 'ok', 10, 13, 0                  ; debugging string
 ;----------------------------------------------------------------------------------------------------------
 test_failed_register    db 'register failed!', 10, 13, 0    ; debugging string
@@ -933,5 +1053,5 @@ cpu_after_execution     db 10, 13, 'After execution:', 0    ; debugging string
 test_program:  times 16 db 0x00                             ; program bytes placeholder
                         db 0xff                             ; program end
 ;---------------------------------------------------------------------------------------------------------
-                        times (512*5) - ($-$$) db 0x00      ; BIOS bytes padding
+                        times (512*6) - ($-$$) db 0x00      ; BIOS bytes padding
 ;=========================================================================================================
