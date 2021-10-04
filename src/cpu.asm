@@ -249,26 +249,6 @@ jmp $
 ;----------------------------------------------------------------------------------------------------------
 ;                                    LDA - immediate addressing mode
 ;----------------------------------------------------------------------------------------------------------
-
-                        ;mov si, new_line                    ; point SI to new line
-                        ;call PROCEDURES:print_string        ; print new line
-                        ;mov si, memory_monitor              ; point SI to memory_monitor string
-                        ;call PROCEDURES:print_string        ; print memory_monitor string
-                        ;mov si, MEMORY                      ; 6502 memory range starting point
-                        ;mov di, MEMORY + 0x28               ; 6502 memory range end point
-                        ;call print_memory_range             ; print 6502 memory bytes
-
-
-; LDA IMMEDIATE            
-                        ; LDA ZERO PAGE
-                        ;db 0xa5, 0x00                       ; LDA #$12
-                        ;db 0xa5, 0x01                       ; LDA #$12
-                        ;db 0xa5, 0x02                       ; LDA #$12
-                        ;db 0xa5, 0x03                       ; LDA #$12
-                        ;db 0xff                             ; program end
-
-                        ;mov word [test_program + 6], 0x65a9 ; LDA #$65
-
 unit_tests:             call reset_cpu                      ; reset 6502 CPU
                         call reset_memory                   ; reset 6502 memory
 ;----------------------------------------------------------------------------------------------------------
@@ -354,7 +334,47 @@ test_003:               mov word [test_program], 0xe5a9     ; LDA #$e5
                         call PROCEDURES:print_string        ; print test_passed string
                         jmp test_004                        ; jump to next test
 ;----------------------------------------------------------------------------------------------------------
-test_004:
+test_004:               mov word [test_program], 0x04a5     ; LDA #$04
+                        mov si, test_program                ; point SI to test program
+                        call load_program                   ; load test program to 6502 memory
+                        mov si, test_lda_zp                 ; point SI to test_lda_imm
+                        call PROCEDURES:print_string        ; print test_lda_imm string
+                        mov si, machine_code                ; point SI to machine_code string
+                        call PROCEDURES:print_string        ; print machine code string
+                        mov si, PROGRAM                     ; 6502 memory range starting point
+                        mov di, PROGRAM + 0x08              ; 6502 memory range end point
+                        call print_memory_range             ; print 6502 program source bytes
+                        push ds                             ; preserve DS
+                        xor ax, ax                          ; reset AX
+                        mov ds, ax                          ; reset DS
+                        mov si, MEMORY + 4                  ; point SI to 6502 simulated memory
+                        mov byte [ds:si], 0x45              ; init value in 6502 simulated memory
+                        pop ds                              ; hook up local variables
+                        mov si, new_line                    ; point SI to new line
+                        call PROCEDURES:print_string        ; print new line
+                        mov si, memory_monitor              ; point SI to memory_monitor string
+                        call PROCEDURES:print_string        ; print memory_monitor string
+                        mov si, MEMORY                      ; 6502 memory range starting point
+                        mov di, MEMORY + 0x08               ; 6502 memory range end point
+                        call print_memory_range             ; print 6502 memory bytes
+                        mov si, cpu_before_execution        ; point SI to cpu_before_execution string
+                        call PROCEDURES:print_string        ; print cpu_before_execution
+                        call print_debug_info               ; print registers
+                        call execute                        ; execute instruction
+                        mov si, cpu_after_execution         ; point SI to cpu_after_execution string
+                        call PROCEDURES:print_string        ; print cpu_after_execution
+                        call print_debug_info               ; print registers
+                        cmp byte [register_A], 0x45         ; test A register
+                        jne test_error_register             ; failure case, stop tests
+                        cmp byte [register_P], 0x20         ; test processor flags
+                        jne test_error_flags                ; failure case, stop tests
+                        cmp byte [program_counter], 0x08    ; test program counter
+                        jne test_error_pc                   ; failure case, stop tests
+                        mov si, test_passed                 ; point SI to test_passed string
+                        call PROCEDURES:print_string        ; print test_passed string
+                        jmp test_005                        ; jump to next test
+;----------------------------------------------------------------------------------------------------------
+test_005:
 ;----------------------------------------------------------------------------------------------------------
 tests_completed:        mov si, all_done                    ; point SI to success message
                         call PROCEDURES:print_string        ; print success message
@@ -466,7 +486,17 @@ lda_zp:                 lodsb                               ; AL holds ZP addres
                         call clear_zero_flag                ; clear zero flag
                         call clear_negative_flag            ; clear negative flag
                         add byte [program_counter], 0x02    ; update program counter
-                        xor ah, ah                          ; reset AX
+                        call get_zp_val                     ; get value from zero page
+                        mov byte [register_A], al           ; load ZP data to A register
+                        cmp al, 0x00                        ; if AL is equal to 0
+                        je set_flags_szf                    ; then set zero flag
+                        test al, 0x80                       ; test negative
+                        jne set_flags_snf                   ; then set negative flag
+                        jmp execute_debug                   ; execute next instruction             
+;----------------------------------------------------------------------------------------------------------
+;                      ADDRESSING MODES - ARGS: none (returns ZP value in AL)
+;----------------------------------------------------------------------------------------------------------
+get_zp_val:             xor ah, ah                          ; reset AX
                         add ax, MEMORY                      ; get ZP address in simulated memory
                         push ds                             ; preserve DS
                         push ax                             ; preserve ZP address
@@ -478,12 +508,7 @@ lda_zp:                 lodsb                               ; AL holds ZP addres
                         lodsb                               ; get byte from ZP address
                         pop si                              ; restore current 6502 program byte pointer
                         pop ds                              ; hook up local variables
-                        mov byte [register_A], al           ; load ZP data to A register
-                        cmp al, 0x00                        ; if AL is equal to 0
-                        je set_flags_szf                    ; then set zero flag
-                        test al, 0x80                       ; test negative
-                        jne set_flags_snf                   ; then set negative flag
-                        jmp execute_debug                   ; execute next instruction
+                        ret                                 ; return from procedure
 ;----------------------------------------------------------------------------------------------------------
 ;                                     SET ZERO/NEGATIVE FLAGS
 ;----------------------------------------------------------------------------------------------------------
@@ -632,7 +657,15 @@ memory_monitor          db '6502 memory dump:', 10, 13, 0   ; debugging string
 test_lda_imm            db 10, 13                           ; debugging string
                         db '-------------------------',     ; debugging string
                         db 10, 13                           ; debugging string
-                        db 'LDA Immediate addressing:'      ; debugging string
+                        db 'LDA immediate addressing:'      ; debugging string
+                        db 10, 13                           ; debugging string
+                        db '-------------------------'      ; debugging string
+                        db 10, 13, 10, 13, 0                ; debugging string
+;----------------------------------------------------------------------------------------------------------
+test_lda_zp             db 10, 13                           ; debugging string
+                        db '-------------------------',     ; debugging string
+                        db 10, 13                           ; debugging string
+                        db 'LDA zero page addressing:'      ; debugging string
                         db 10, 13                           ; debugging string
                         db '-------------------------'      ; debugging string
                         db 10, 13, 10, 13, 0                ; debugging string
