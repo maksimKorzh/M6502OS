@@ -40,8 +40,8 @@
 %define                 INS_LDA_ABS 0xad
 %define                 INS_LDA_ABSX 0xbd
 %define                 INS_LDA_ABSY 0xb9
-%define                 INS_LDA_INDX 0xA1
-%define                 INS_LDA_INDY 0xB1
+%define                 INS_LDA_INDX 0xa1
+%define                 INS_LDA_INDY 0xb1
 ;----------------------------------------------------------------------------------------------------------
 %define                 INS_LDX_IM 0xA2
 %define                 INS_LDX_ZP 0xA6
@@ -256,8 +256,8 @@ test_001:               mov byte [register_P], 0xa2         ; set zero and negat
                         mov word [test_program], 0x24a9     ; LDA #$00
                         mov si, test_program                ; point SI to test program
                         call load_program                   ; load test program to 6502 memory
-                        mov si, test_lda_imm                ; point SI to test_lda_imm
-                        call PROCEDURES:print_string        ; print test_lda_imm string
+                        mov si, test_ins_imm                ; print debugging string
+                        call PROCEDURES:print_string        ; print debugging string    
                         mov si, machine_code                ; point SI to machine_code string
                         call PROCEDURES:print_string        ; print machine code string
                         mov si, PROGRAM                     ; 6502 memory range starting point
@@ -283,8 +283,8 @@ test_001:               mov byte [register_P], 0xa2         ; set zero and negat
 test_002:               mov word [test_program], 0x00a9     ; LDA #$24
                         mov si, test_program                ; point SI to test program
                         call load_program                   ; load test program to 6502 memory
-                        mov si, test_lda_imm                ; point SI to test_lda_imm
-                        call PROCEDURES:print_string        ; print test_lda_imm string
+                        mov si, test_ins_imm                ; print debugging string
+                        call PROCEDURES:print_string        ; print debugging string
                         mov si, machine_code                ; point SI to machine_code string
                         call PROCEDURES:print_string        ; print machine code string
                         mov si, PROGRAM                     ; 6502 memory range starting point
@@ -310,8 +310,8 @@ test_002:               mov word [test_program], 0x00a9     ; LDA #$24
 test_003:               mov word [test_program], 0xe5a9     ; LDA #$e5
                         mov si, test_program                ; point SI to test program
                         call load_program                   ; load test program to 6502 memory
-                        mov si, test_lda_imm                ; point SI to test_lda_imm
-                        call PROCEDURES:print_string        ; print test_lda_imm string
+                        mov si, test_ins_imm                ; print debugging string
+                        call PROCEDURES:print_string        ; print debugging string
                         mov si, machine_code                ; point SI to machine_code string
                         call PROCEDURES:print_string        ; print machine code string
                         mov si, PROGRAM                     ; 6502 memory range starting point
@@ -337,8 +337,8 @@ test_003:               mov word [test_program], 0xe5a9     ; LDA #$e5
 test_004:               mov word [test_program], 0x04a5     ; LDA $04
                         mov si, test_program                ; point SI to test program
                         call load_program                   ; load test program to 6502 memory
-                        mov si, test_lda_zp                 ; point SI to test_lda_imm
-                        call PROCEDURES:print_string        ; print test_lda_imm string
+                        mov si, test_ins_zp                 ; print debugging string
+                        call PROCEDURES:print_string        ; print debugging string
                         mov si, machine_code                ; point SI to machine_code string
                         call PROCEDURES:print_string        ; print machine code string
                         mov si, PROGRAM                     ; 6502 memory range starting point
@@ -378,8 +378,8 @@ test_005:               mov word [test_program], 0x04b5     ; LDA $04,X
                         mov byte [register_X], 0x01         ; init offset of 0x01 in X register
                         mov si, test_program                ; point SI to test program
                         call load_program                   ; load test program to 6502 memory
-                        mov si, test_lda_zpx                ; point SI to test_lda_imm
-                        call PROCEDURES:print_string        ; print test_lda_imm string
+                        mov si, test_ins_zpx                ; print debugging string
+                        call PROCEDURES:print_string        ; print debugging string
                         mov si, machine_code                ; point SI to machine_code string
                         call PROCEDURES:print_string        ; print machine code string
                         mov si, PROGRAM                     ; 6502 memory range starting point
@@ -419,8 +419,8 @@ test_006:               mov byte [test_program], 0xad       ; LDA $0104
                         mov word [test_program + 1], 0x0104 ; little endian address: 04 01 
                         mov si, test_program                ; point SI to test program
                         call load_program                   ; load test program to 6502 memory
-                        mov si, test_lda_abs                ; point SI to test_lda_imm
-                        call PROCEDURES:print_string        ; print test_lda_imm string
+                        mov si, test_ins_abs                ; print debugging string
+                        call PROCEDURES:print_string        ; print debugging string
                         mov si, machine_code                ; point SI to machine_code string
                         call PROCEDURES:print_string        ; print machine code string
                         mov si, PROGRAM                     ; 6502 memory range starting point
@@ -460,8 +460,8 @@ test_007:               mov byte [test_program], 0xbd       ; LDA $0104,X
                         mov word [test_program + 1], 0x0104 ; little endian address: 04 01 
                         mov si, test_program                ; point SI to test program
                         call load_program                   ; load test program to 6502 memory
-                        mov si, test_lda_abs_x              ; point SI to test_lda_imm
-                        call PROCEDURES:print_string        ; print test_lda_imm string
+                        mov si, test_ins_abs_x              ; print debugging string
+                        call PROCEDURES:print_string        ; print debugging string
                         mov si, machine_code                ; point SI to machine_code string
                         call PROCEDURES:print_string        ; print machine code string
                         mov si, PROGRAM                     ; 6502 memory range starting point
@@ -502,8 +502,8 @@ test_008:               mov byte [register_Y], 0x02         ; set register Y off
                         mov word [test_program + 1], 0x0102 ; little endian address: 04 01 
                         mov si, test_program                ; point SI to test program
                         call load_program                   ; load test program to 6502 memory
-                        mov si, test_lda_abs_y              ; point SI to test_lda_imm
-                        call PROCEDURES:print_string        ; print test_lda_imm string
+                        mov si, test_ins_abs_y              ; print debugging string
+                        call PROCEDURES:print_string        ; print debugging string
                         mov si, machine_code                ; point SI to machine_code string
                         call PROCEDURES:print_string        ; print machine code string
                         mov si, PROGRAM                     ; 6502 memory range starting point
@@ -544,8 +544,8 @@ test_009:               mov byte [register_X], 0x04         ; set register Y off
                         mov byte [test_program + 2], 0x00   ; reset previous instructions
                         mov si, test_program                ; point SI to test program
                         call load_program                   ; load test program to 6502 memory
-                        mov si, test_lda_indexed_indir      ; point SI to test_lda_imm
-                        call PROCEDURES:print_string        ; print test_lda_imm string
+                        mov si, test_ins_indexed_indir      ; print debugging string
+                        call PROCEDURES:print_string        ; print debugging string
                         mov si, machine_code                ; point SI to machine_code string
                         call PROCEDURES:print_string        ; print machine code string
                         mov si, PROGRAM                     ; 6502 memory range starting point
@@ -588,34 +588,60 @@ test_009:               mov byte [register_X], 0x04         ; set register Y off
                         jne test_error_pc                   ; failure case, stop tests
                         mov si, test_passed                 ; point SI to test_passed string
                         call PROCEDURES:print_string        ; print test_passed string
-                        jmp test_010
-
-; 0024: 74 20
-;lda #$74
-;sta $24
-;lda #$20
-;sta $25
-
-;lda #$93
-;sta $2074
-;txa
-;ldx #$04
-;lda ($20,x) ; A=93 fetched from 2074
-            ; 20 + x = 24
-            ; val at $24 = 2074 (little endian 7420)
-
-;lda #$94
-;sta $2078
-;ldy #$04
-;lda ($24),y ; A=94 fetched from 2074 + Y
-            ; INDIRECT INDEXED
-
-;So the difference is following:
-;Indexed indirect uses X to adjust index
-;Indirect indexed uses Y to adjust dest address
+                        jmp test_010                        ; jump to next text
 
 ;----------------------------------------------------------------------------------------------------------
-test_010:
+test_010:               mov byte [register_Y], 0x04         ; set register Y offset
+                        mov word [test_program], 0x24b1     ; little endian address: 04 01
+                        mov si, test_program                ; point SI to test program
+                        call load_program                   ; load test program to 6502 memory
+                        mov si, test_ins_indir_indexed      ; print debugging string
+                        call PROCEDURES:print_string        ; print debugging string
+                        mov si, machine_code                ; point SI to machine_code string
+                        call PROCEDURES:print_string        ; print machine code string
+                        mov si, PROGRAM                     ; 6502 memory range starting point
+                        mov di, PROGRAM + 0x08              ; 6502 memory range end point
+                        call print_memory_range             ; print 6502 program source bytes
+                        push ds                             ; preserve DS
+                        xor ax, ax                          ; reset AX
+                        mov ds, ax                          ; reset DS
+                        mov si, MEMORY + 0x24               ; point SI to 6502 simulated memory
+                        mov word [ds:si], 0x1070            ; init value in 6502 simulated memory
+                        mov si, MEMORY + 0x1074             ; point SI to indirect memory address
+                        mov byte [ds:si], 0x45              ; set value at indirect memory address
+                        pop ds                              ; hook up local variables
+                        mov si, new_line                    ; point SI to new line
+                        call PROCEDURES:print_string        ; print new line
+                        mov si, memory_monitor              ; point SI to memory_monitor string
+                        call PROCEDURES:print_string        ; print memory_monitor string
+                        mov si, MEMORY                      ; 6502 memory range starting point
+                        mov di, MEMORY + 0x28               ; 6502 memory range end point
+                        call print_memory_range             ; print 6502 memory bytes
+                        mov si, new_line                    ; point SI to new line
+                        call PROCEDURES:print_string        ; print new line
+                        mov si, memory_monitor              ; point SI to memory_monitor string
+                        call PROCEDURES:print_string        ; print memory_monitor string
+                        mov si, MEMORY + 0x1070             ; 6502 memory range starting point
+                        mov di, MEMORY + 0x1078             ; 6502 memory range end point
+                        call print_memory_range             ; print 6502 memory bytes
+                        mov si, cpu_before_execution        ; point SI to cpu_before_execution string
+                        call PROCEDURES:print_string        ; print cpu_before_execution
+                        call print_debug_info               ; print registers
+                        call execute                        ; execute instruction
+                        mov si, cpu_after_execution         ; point SI to cpu_after_execution string
+                        call PROCEDURES:print_string        ; print cpu_after_execution
+                        call print_debug_info               ; print registers
+                        cmp byte [register_A], 0x45         ; test A register
+                        jne test_error_register             ; failure case, stop tests
+                        cmp byte [register_P], 0x20         ; test processor flags
+                        jne test_error_flags                ; failure case, stop tests
+                        cmp byte [program_counter], 0x17    ; test program counter
+                        jne test_error_pc                   ; failure case, stop tests
+                        mov si, test_passed                 ; point SI to test_passed string
+                        call PROCEDURES:print_string        ; print test_passed string
+                        jmp test_011                        ; jump to next test
+;----------------------------------------------------------------------------------------------------------
+test_011:
 ;----------------------------------------------------------------------------------------------------------
 tests_completed:        mov si, all_done                    ; point SI to success message
                         call PROCEDURES:print_string        ; print success message
@@ -659,6 +685,8 @@ execute_next:           push ds                             ; preserve current f
                         je lda_abs_y                        ; if so then execute it
                         cmp al, INS_LDA_INDX                ; LDA indexed indirect addressing opcode?
                         je lda_indexed_indirect             ; if so then execute it
+                        cmp al, INS_LDA_INDY                ; LDA indirect indexed addressing opcode?
+                        je lda_indirect_indexed             ; if so then execute it
                         cmp al, 0x00                        ; if no more instructions available
                         je execute_return                   ; then stop execution
                         jmp execute_error                   ; otherwise we've got an error
@@ -786,7 +814,21 @@ lda_indexed_indirect:   lodsb                               ; AL holds ZP addres
                         test al, 0x80                       ; test negative
                         jne set_flags_snf                   ; then set negative flag
                         jmp execute_debug                   ; execute next instruction             
-
+;----------------------------------------------------------------------------------------------------------
+;                                LDA ($ZP),Y - indexed indirect mode
+;----------------------------------------------------------------------------------------------------------
+lda_indirect_indexed:   lodsb                               ; AL holds ZP address to load value from
+                        pop ds                              ; hook up local variables
+                        call clear_zero_flag                ; clear zero flag
+                        call clear_negative_flag            ; clear negative flag
+                        add byte [program_counter], 0x02    ; update program counter                        
+                        call get_indirect_indexed           ; get value from indexed indirect
+                        mov byte [register_A], al           ; load ZP data to A register
+                        cmp al, 0x00                        ; if AL is equal to 0
+                        je set_flags_szf                    ; then set zero flag
+                        test al, 0x80                       ; test negative
+                        jne set_flags_snf                   ; then set negative flag
+                        jmp execute_debug                   ; execute next instruction             
 ;----------------------------------------------------------------------------------------------------------
 ;                      ADDRESSING MODES - ARGS: none (returns ZP value in AL)
 ;----------------------------------------------------------------------------------------------------------
@@ -830,6 +872,26 @@ get_indexed_indirect:   xor ah, ah                          ; reset AX
                         mov si, ax                          ; point SI to indexed indirect address
                         add si, MEMORY                      ; calculate indirect memory address
                         lodsb                               ; fetch byte from there                        
+                        pop si                              ; restore current 6502 program byte pointer
+                        pop ds                              ; hook up local variables
+                        ret                                 ; return from procedure
+;----------------------------------------------------------------------------------------------------------
+get_indirect_indexed:   xor ah, ah                          ; reset AX
+                        add ax, MEMORY                      ; get ZP address in simulated memory                        
+                        xor bx, bx                          ; reset BX
+                        mov bl, byte [register_Y]           ; store the value of Y register to BL
+                        push ds                             ; preserve DS
+                        push ax                             ; preserve ZP address
+                        xor ax, ax                          ; reset AX
+                        mov ds, ax                          ; reset DS
+                        pop ax                              ; restore ZP address
+                        push si                             ; preserve current 6502 program byte pointer                        
+                        mov si, ax                          ; point SI to ZP address
+                        lodsw                               ; get byte from ZP address
+                        mov si, ax                          ; point SI to indirect address
+                        add si, MEMORY                      ; calculate indirect memory address
+                        add si, bx                          ; add Y register offset
+                        lodsb                               ; load value from indirect indexed address
                         pop si                              ; restore current 6502 program byte pointer
                         pop ds                              ; hook up local variables
                         ret                                 ; return from procedure
@@ -978,58 +1040,66 @@ machine_code            db '6502 machine code:', 10, 13, 0  ; debugging string
 ;----------------------------------------------------------------------------------------------------------
 memory_monitor          db '6502 memory dump:', 10, 13, 0   ; debugging string
 ;----------------------------------------------------------------------------------------------------------
-test_lda_imm            db 10, 13                           ; debugging string
+test_ins_imm            db 10, 13                           ; debugging string
                         db '-------------------------',     ; debugging string
                         db 10, 13                           ; debugging string
-                        db 'LDA #$immediate addressing:'    ; debugging string
+                        db 'INS #$immediate addressing:'    ; debugging string
                         db 10, 13                           ; debugging string
                         db '-------------------------'      ; debugging string
                         db 10, 13, 10, 13, 0                ; debugging string
 ;----------------------------------------------------------------------------------------------------------
-test_lda_zp             db 10, 13                           ; debugging string
+test_ins_zp             db 10, 13                           ; debugging string
                         db '-------------------------',     ; debugging string
                         db 10, 13                           ; debugging string
-                        db 'LDA $ZP addressing:'      ; debugging string
+                        db 'INS $ZP addressing:'      ; debugging string
                         db 10, 13                           ; debugging string
                         db '-------------------------'      ; debugging string
                         db 10, 13, 10, 13, 0                ; debugging string
 ;----------------------------------------------------------------------------------------------------------
-test_lda_zpx            db 10, 13                           ; debugging string
+test_ins_zpx            db 10, 13                           ; debugging string
                         db '-------------------------',     ; debugging string
                         db 10, 13                           ; debugging string
-                        db 'LDA $ZP,X addressing:'          ; debugging string
+                        db 'INS $ZP,X addressing:'          ; debugging string
                         db 10, 13                           ; debugging string
                         db '-------------------------'      ; debugging string
                         db 10, 13, 10, 13, 0                ; debugging string
 ;----------------------------------------------------------------------------------------------------------
-test_lda_abs            db 10, 13                           ; debugging string
+test_ins_abs            db 10, 13                           ; debugging string
                         db '-------------------------',     ; debugging string
                         db 10, 13                           ; debugging string
-                        db 'LDA $ABS addressing:'           ; debugging string
+                        db 'INS $ABS addressing:'           ; debugging string
                         db 10, 13                           ; debugging string
                         db '-------------------------'      ; debugging string
                         db 10, 13, 10, 13, 0                ; debugging string
 ;----------------------------------------------------------------------------------------------------------
-test_lda_abs_x          db 10, 13                           ; debugging string
+test_ins_abs_x          db 10, 13                           ; debugging string
                         db '-------------------------',     ; debugging string
                         db 10, 13                           ; debugging string
-                        db 'LDA $ABS,X addressing:'         ; debugging string
+                        db 'INS $ABS,X addressing:'         ; debugging string
                         db 10, 13                           ; debugging string
                         db '-------------------------'      ; debugging string
                         db 10, 13, 10, 13, 0                ; debugging string
 ;----------------------------------------------------------------------------------------------------------
-test_lda_abs_y          db 10, 13                           ; debugging string
+test_ins_abs_y          db 10, 13                           ; debugging string
                         db '-------------------------',     ; debugging string
                         db 10, 13                           ; debugging string
-                        db 'LDA $ABS,Y addressing:'         ; debugging string
+                        db 'INS $ABS,Y addressing:'         ; debugging string
                         db 10, 13                           ; debugging string
                         db '-------------------------'      ; debugging string
                         db 10, 13, 10, 13, 0                ; debugging string
 ;----------------------------------------------------------------------------------------------------------
-test_lda_indexed_indir: db 10, 13                           ; debugging string
+test_ins_indexed_indir  db 10, 13                           ; debugging string
                         db '-------------------------',     ; debugging string
                         db 10, 13                           ; debugging string
-                        db 'LDA ($ZP,X) addressing:'        ; debugging string
+                        db 'INS ($ZP,X) addressing:'        ; debugging string
+                        db 10, 13                           ; debugging string
+                        db '-------------------------'      ; debugging string
+                        db 10, 13, 10, 13, 0                ; debugging string
+;----------------------------------------------------------------------------------------------------------
+test_ins_indir_indexed  db 10, 13                           ; debugging string
+                        db '-------------------------',     ; debugging string
+                        db 10, 13                           ; debugging string
+                        db 'INS ($ZP),Y addressing:'        ; debugging string
                         db 10, 13                           ; debugging string
                         db '-------------------------'      ; debugging string
                         db 10, 13, 10, 13, 0                ; debugging string
