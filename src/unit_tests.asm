@@ -387,7 +387,197 @@ test_010:               mov byte [register_Y], 0x04         ; set register Y off
                         jne test_error_pc                   ; failure case, stop tests
                         mov si, test_passed                 ; point SI to test_passed string
                         call PROCEDURES:print_string        ; print test_passed string
-                        jmp test_011                        ; jump to next test
 ;----------------------------------------------------------------------------------------------------------
-test_011:
+;                                                    LDX
+;----------------------------------------------------------------------------------------------------------
+test_001:               mov byte [register_P], 0xa2         ; set zero and negative flags to true
+                        mov word [test_program], 0x24a2     ; LDX #$24
+                        mov si, test_program                ; point SI to test program
+                        call load_program                   ; load test program to 6502 memory
+                        mov si, test_ins_imm                ; print debugging string
+                        call PROCEDURES:print_string        ; print debugging string    
+                        mov si, machine_code                ; point SI to machine_code string
+                        call PROCEDURES:print_string        ; print machine code string
+                        mov si, PROGRAM                     ; 6502 memory range starting point
+                        mov di, PROGRAM + 0x08              ; 6502 memory range end point
+                        call print_memory_range             ; print 6502 program source bytes
+                        mov si, cpu_before_execution        ; point SI to cpu_before_execution string
+                        call PROCEDURES:print_string        ; print cpu_before_execution
+                        call print_debug_info               ; print registers
+                        call execute                        ; execute instruction
+                        mov si, cpu_after_execution         ; point SI to cpu_after_execution string
+                        call PROCEDURES:print_string        ; print cpu_after_execution
+                        call print_debug_info               ; print registers
+                        cmp byte [register_X], 0x24         ; test X register
+                        jne test_error_register             ; failure case, stop tests
+                        cmp byte [register_P], 0x20         ; test processor flags
+                        jne test_error_flags                ; failure case, stop tests
+                        cmp byte [program_counter], 0x02    ; test program counter
+                        jne test_error_pc                   ; failure case, stop tests
+                        mov si, test_passed                 ; point SI to test_passed string
+                        call PROCEDURES:print_string        ; print test_passed string
+                        jmp test_002                        ; jump to next test
+;----------------------------------------------------------------------------------------------------------
+test_002:               mov word [test_program], 0x04a6     ; LDX $04
+                        mov si, test_program                ; point SI to test program
+                        call load_program                   ; load test program to 6502 memory
+                        mov si, test_ins_zp                 ; print debugging string
+                        call PROCEDURES:print_string        ; print debugging string
+                        mov si, machine_code                ; point SI to machine_code string
+                        call PROCEDURES:print_string        ; print machine code string
+                        mov si, PROGRAM                     ; 6502 memory range starting point
+                        mov di, PROGRAM + 0x08              ; 6502 memory range end point
+                        call print_memory_range             ; print 6502 program source bytes
+                        push ds                             ; preserve DS
+                        xor ax, ax                          ; reset AX
+                        mov ds, ax                          ; reset DS
+                        mov si, MEMORY + 4                  ; point SI to 6502 simulated memory
+                        mov byte [ds:si], 0xe5              ; init value in 6502 simulated memory
+                        pop ds                              ; hook up local variables
+                        mov si, new_line                    ; point SI to new line
+                        call PROCEDURES:print_string        ; print new line
+                        mov si, memory_monitor              ; point SI to memory_monitor string
+                        call PROCEDURES:print_string        ; print memory_monitor string
+                        mov si, MEMORY                      ; 6502 memory range starting point
+                        mov di, MEMORY + 0x08               ; 6502 memory range end point
+                        call print_memory_range             ; print 6502 memory bytes
+                        mov si, cpu_before_execution        ; point SI to cpu_before_execution string
+                        call PROCEDURES:print_string        ; print cpu_before_execution
+                        call print_debug_info               ; print registers
+                        call execute                        ; execute instruction
+                        mov si, cpu_after_execution         ; point SI to cpu_after_execution string
+                        call PROCEDURES:print_string        ; print cpu_after_execution
+                        call print_debug_info               ; print registers
+                        cmp byte [register_X], 0xe5         ; test X register
+                        jne test_error_register             ; failure case, stop tests
+                        cmp byte [register_P], 0xA0         ; test processor flags
+                        jne test_error_flags                ; failure case, stop tests
+                        cmp byte [program_counter], 0x04    ; test program counter
+                        jne test_error_pc                   ; failure case, stop tests
+                        mov si, test_passed                 ; point SI to test_passed string
+                        call PROCEDURES:print_string        ; print test_passed string
+                        jmp test_003                        ; jump to next test
+;----------------------------------------------------------------------------------------------------------
+test_003:               mov word [test_program], 0x04b6     ; LDX $04,Y
+                        mov byte [register_Y], 0x01         ; init offset of 0x01 in Y register
+                        mov si, test_program                ; point SI to test program
+                        call load_program                   ; load test program to 6502 memory
+                        mov si, test_ins_zpy                ; print debugging string
+                        call PROCEDURES:print_string        ; print debugging string
+                        mov si, machine_code                ; point SI to machine_code string
+                        call PROCEDURES:print_string        ; print machine code string
+                        mov si, PROGRAM                     ; 6502 memory range starting point
+                        mov di, PROGRAM + 0x08              ; 6502 memory range end point
+                        call print_memory_range             ; print 6502 program source bytes
+                        push ds                             ; preserve DS
+                        xor ax, ax                          ; reset AX
+                        mov ds, ax                          ; reset DS
+                        mov si, MEMORY + 5                  ; point SI to 6502 simulated memory
+                        mov byte [ds:si], 0xf8              ; init value in 6502 simulated memory
+                        pop ds                              ; hook up local variables
+                        mov si, new_line                    ; point SI to new line
+                        call PROCEDURES:print_string        ; print new line
+                        mov si, memory_monitor              ; point SI to memory_monitor string
+                        call PROCEDURES:print_string        ; print memory_monitor string
+                        mov si, MEMORY                      ; 6502 memory range starting point
+                        mov di, MEMORY + 0x08               ; 6502 memory range end point
+                        call print_memory_range             ; print 6502 memory bytes
+                        mov si, cpu_before_execution        ; point SI to cpu_before_execution string
+                        call PROCEDURES:print_string        ; print cpu_before_execution
+                        call print_debug_info               ; print registers
+                        call execute                        ; execute instruction
+                        mov si, cpu_after_execution         ; point SI to cpu_after_execution string
+                        call PROCEDURES:print_string        ; print cpu_after_execution
+                        call print_debug_info               ; print registers
+                        cmp byte [register_X], 0xf8         ; test X register
+                        jne test_error_register             ; failure case, stop tests
+                        cmp byte [register_P], 0xa0         ; test processor flags
+                        jne test_error_flags                ; failure case, stop tests
+                        cmp byte [program_counter], 0x06    ; test program counter
+                        jne test_error_pc                   ; failure case, stop tests
+                        mov si, test_passed                 ; point SI to test_passed string
+                        call PROCEDURES:print_string        ; print test_passed string
+                        jmp test_004                        ; jump to next test
+;----------------------------------------------------------------------------------------------------------                        
+test_004:               mov byte [test_program], 0xae       ; LDX $0104
+                        mov word [test_program + 1], 0x0104 ; little endian address: 04 01 
+                        mov si, test_program                ; point SI to test program
+                        call load_program                   ; load test program to 6502 memory
+                        mov si, test_ins_abs                ; print debugging string
+                        call PROCEDURES:print_string        ; print debugging string
+                        mov si, machine_code                ; point SI to machine_code string
+                        call PROCEDURES:print_string        ; print machine code string
+                        mov si, PROGRAM                     ; 6502 memory range starting point
+                        mov di, PROGRAM + 0x08              ; 6502 memory range end point
+                        call print_memory_range             ; print 6502 program source bytes
+                        push ds                             ; preserve DS
+                        xor ax, ax                          ; reset AX
+                        mov ds, ax                          ; reset DS
+                        mov si, MEMORY + 0x104              ; point SI to 6502 simulated memory
+                        mov byte [ds:si], 0x73              ; init value in 6502 simulated memory
+                        pop ds                              ; hook up local variables
+                        mov si, new_line                    ; point SI to new line
+                        call PROCEDURES:print_string        ; print new line
+                        mov si, memory_monitor              ; point SI to memory_monitor string
+                        call PROCEDURES:print_string        ; print memory_monitor string
+                        mov si, MEMORY + 0x100              ; 6502 memory range starting point
+                        mov di, MEMORY + 0x108              ; 6502 memory range end point
+                        call print_memory_range             ; print 6502 memory bytes
+                        mov si, cpu_before_execution        ; point SI to cpu_before_execution string
+                        call PROCEDURES:print_string        ; print cpu_before_execution
+                        call print_debug_info               ; print registers
+                        call execute                        ; execute instruction
+                        mov si, cpu_after_execution         ; point SI to cpu_after_execution string
+                        call PROCEDURES:print_string        ; print cpu_after_execution
+                        call print_debug_info               ; print registers
+                        cmp byte [register_X], 0x73         ; test X register
+                        jne test_error_register             ; failure case, stop tests
+                        cmp byte [register_P], 0x20         ; test processor flags
+                        jne test_error_flags                ; failure case, stop tests
+                        cmp byte [program_counter], 0x09    ; test program counter
+                        jne test_error_pc                   ; failure case, stop tests
+                        mov si, test_passed                 ; point SI to test_passed string
+                        call PROCEDURES:print_string        ; print test_passed string
+                        jmp test_005                        ; jump to next test
+;----------------------------------------------------------------------------------------------------------
+test_005:               mov byte [test_program], 0xbe       ; LDX $0104,Y
+                        mov word [test_program + 1], 0x0104 ; little endian address: 04 01 
+                        mov si, test_program                ; point SI to test program
+                        call load_program                   ; load test program to 6502 memory
+                        mov si, test_ins_abs_y              ; print debugging string
+                        call PROCEDURES:print_string        ; print debugging string
+                        mov si, machine_code                ; point SI to machine_code string
+                        call PROCEDURES:print_string        ; print machine code string
+                        mov si, PROGRAM                     ; 6502 memory range starting point
+                        mov di, PROGRAM + 0x08              ; 6502 memory range end point
+                        call print_memory_range             ; print 6502 program source bytes
+                        push ds                             ; preserve DS
+                        xor ax, ax                          ; reset AX
+                        mov ds, ax                          ; reset DS
+                        mov si, MEMORY + 0x105              ; point SI to 6502 simulated memory
+                        mov byte [ds:si], 0x92              ; init value in 6502 simulated memory
+                        pop ds                              ; hook up local variables
+                        mov si, new_line                    ; point SI to new line
+                        call PROCEDURES:print_string        ; print new line
+                        mov si, memory_monitor              ; point SI to memory_monitor string
+                        call PROCEDURES:print_string        ; print memory_monitor string
+                        mov si, MEMORY + 0x100              ; 6502 memory range starting point
+                        mov di, MEMORY + 0x108              ; 6502 memory range end point
+                        call print_memory_range             ; print 6502 memory bytes
+                        mov si, cpu_before_execution        ; point SI to cpu_before_execution string
+                        call PROCEDURES:print_string        ; print cpu_before_execution
+                        call print_debug_info               ; print registers
+                        call execute                        ; execute instruction
+                        mov si, cpu_after_execution         ; point SI to cpu_after_execution string
+                        call PROCEDURES:print_string        ; print cpu_after_execution
+                        call print_debug_info               ; print registers
+                        cmp byte [register_X], 0x92         ; test X register
+                        jne test_error_register             ; failure case, stop tests
+                        cmp byte [register_P], 0xa0         ; test processor flags
+                        jne test_error_flags                ; failure case, stop tests
+                        cmp byte [program_counter], 0x0c    ; test program counter
+                        jne test_error_pc                   ; failure case, stop tests
+                        mov si, test_passed                 ; point SI to test_passed string
+                        call PROCEDURES:print_string        ; print test_passed string
+
 

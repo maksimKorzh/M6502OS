@@ -49,11 +49,11 @@
 %define                 INS_LDX_ABS 0xae
 %define                 INS_LDX_ABSY 0xbe
 ;----------------------------------------------------------------------------------------------------------
-%define                 INS_LDY_IM 0xA0
-%define                 INS_LDY_ZP 0xA4
-%define                 INS_LDY_ZPX 0xB4
-%define                 INS_LDY_ABS 0xAC
-%define                 INS_LDY_ABSX 0xBC
+%define                 INS_LDY_IM 0xa0
+%define                 INS_LDY_ZP 0xa4
+%define                 INS_LDY_ZPX 0xb4
+%define                 INS_LDY_ABS 0xac
+%define                 INS_LDY_ABSX 0xbc
 ;----------------------------------------------------------------------------------------------------------
 ;                                             SET OPERATIONS
 ;----------------------------------------------------------------------------------------------------------
@@ -249,9 +249,8 @@ jmp $
 unit_tests:             call reset_cpu                      ; reset 6502 CPU
                         call reset_memory                   ; reset 6502 memory
 ;----------------------------------------------------------------------------------------------------------
-
 test_001:               mov byte [register_P], 0xa2         ; set zero and negative flags to true
-                        mov word [test_program], 0x24a2     ; LDX #$24
+                        mov word [test_program], 0x24a0     ; LDY #$24
                         mov si, test_program                ; point SI to test program
                         call load_program                   ; load test program to 6502 memory
                         mov si, test_ins_imm                ; print debugging string
@@ -268,7 +267,7 @@ test_001:               mov byte [register_P], 0xa2         ; set zero and negat
                         mov si, cpu_after_execution         ; point SI to cpu_after_execution string
                         call PROCEDURES:print_string        ; print cpu_after_execution
                         call print_debug_info               ; print registers
-                        cmp byte [register_X], 0x24         ; test X register
+                        cmp byte [register_Y], 0x24         ; test Y register
                         jne test_error_register             ; failure case, stop tests
                         cmp byte [register_P], 0x20         ; test processor flags
                         jne test_error_flags                ; failure case, stop tests
@@ -278,7 +277,7 @@ test_001:               mov byte [register_P], 0xa2         ; set zero and negat
                         call PROCEDURES:print_string        ; print test_passed string
                         jmp test_002                        ; jump to next test
 ;----------------------------------------------------------------------------------------------------------
-test_002:               mov word [test_program], 0x04a6     ; LDA $04
+test_002:               mov word [test_program], 0x04a4     ; LDY $04
                         mov si, test_program                ; point SI to test program
                         call load_program                   ; load test program to 6502 memory
                         mov si, test_ins_zp                 ; print debugging string
@@ -308,9 +307,9 @@ test_002:               mov word [test_program], 0x04a6     ; LDA $04
                         mov si, cpu_after_execution         ; point SI to cpu_after_execution string
                         call PROCEDURES:print_string        ; print cpu_after_execution
                         call print_debug_info               ; print registers
-                        cmp byte [register_X], 0xe5         ; test X register
+                        cmp byte [register_Y], 0xe5         ; test Y register
                         jne test_error_register             ; failure case, stop tests
-                        cmp byte [register_P], 0xA0         ; test processor flags
+                        cmp byte [register_P], 0xa0         ; test processor flags
                         jne test_error_flags                ; failure case, stop tests
                         cmp byte [program_counter], 0x04    ; test program counter
                         jne test_error_pc                   ; failure case, stop tests
@@ -318,11 +317,11 @@ test_002:               mov word [test_program], 0x04a6     ; LDA $04
                         call PROCEDURES:print_string        ; print test_passed string
                         jmp test_003                        ; jump to next test
 ;----------------------------------------------------------------------------------------------------------
-test_003:               mov word [test_program], 0x04b6     ; LDX $04,Y
-                        mov byte [register_Y], 0x01         ; init offset of 0x01 in Y register
+test_003:               mov word [test_program], 0x04b4     ; LDY $04,X
+                        mov byte [register_X], 0x01         ; init offset of 0x01 in X register
                         mov si, test_program                ; point SI to test program
                         call load_program                   ; load test program to 6502 memory
-                        mov si, test_ins_zpy                ; print debugging string
+                        mov si, test_ins_zpx                ; print debugging string
                         call PROCEDURES:print_string        ; print debugging string
                         mov si, machine_code                ; point SI to machine_code string
                         call PROCEDURES:print_string        ; print machine code string
@@ -349,7 +348,7 @@ test_003:               mov word [test_program], 0x04b6     ; LDX $04,Y
                         mov si, cpu_after_execution         ; point SI to cpu_after_execution string
                         call PROCEDURES:print_string        ; print cpu_after_execution
                         call print_debug_info               ; print registers
-                        cmp byte [register_X], 0xf8         ; test X register
+                        cmp byte [register_Y], 0xf8         ; test Y register
                         jne test_error_register             ; failure case, stop tests
                         cmp byte [register_P], 0xa0         ; test processor flags
                         jne test_error_flags                ; failure case, stop tests
@@ -358,8 +357,8 @@ test_003:               mov word [test_program], 0x04b6     ; LDX $04,Y
                         mov si, test_passed                 ; point SI to test_passed string
                         call PROCEDURES:print_string        ; print test_passed string
                         jmp test_004                        ; jump to next test
-;----------------------------------------------------------------------------------------------------------                        
-test_004:               mov byte [test_program], 0xae       ; LDX $0104
+;----------------------------------------------------------------------------------------------------------
+test_004:               mov byte [test_program], 0xac       ; LDY $0104
                         mov word [test_program + 1], 0x0104 ; little endian address: 04 01 
                         mov si, test_program                ; point SI to test program
                         call load_program                   ; load test program to 6502 memory
@@ -390,7 +389,7 @@ test_004:               mov byte [test_program], 0xae       ; LDX $0104
                         mov si, cpu_after_execution         ; point SI to cpu_after_execution string
                         call PROCEDURES:print_string        ; print cpu_after_execution
                         call print_debug_info               ; print registers
-                        cmp byte [register_X], 0x73         ; test X register
+                        cmp byte [register_Y], 0x73         ; test Y register
                         jne test_error_register             ; failure case, stop tests
                         cmp byte [register_P], 0x20         ; test processor flags
                         jne test_error_flags                ; failure case, stop tests
@@ -400,11 +399,11 @@ test_004:               mov byte [test_program], 0xae       ; LDX $0104
                         call PROCEDURES:print_string        ; print test_passed string
                         jmp test_005                        ; jump to next test
 ;----------------------------------------------------------------------------------------------------------
-test_005:               mov byte [test_program], 0xbe       ; LDX $0104,Y
+test_005:               mov byte [test_program], 0xbc       ; LDY $0104,X
                         mov word [test_program + 1], 0x0104 ; little endian address: 04 01 
                         mov si, test_program                ; point SI to test program
                         call load_program                   ; load test program to 6502 memory
-                        mov si, test_ins_abs_y              ; print debugging string
+                        mov si, test_ins_abs_x              ; print debugging string
                         call PROCEDURES:print_string        ; print debugging string
                         mov si, machine_code                ; point SI to machine_code string
                         call PROCEDURES:print_string        ; print machine code string
@@ -431,7 +430,7 @@ test_005:               mov byte [test_program], 0xbe       ; LDX $0104,Y
                         mov si, cpu_after_execution         ; point SI to cpu_after_execution string
                         call PROCEDURES:print_string        ; print cpu_after_execution
                         call print_debug_info               ; print registers
-                        cmp byte [register_X], 0x92         ; test X register
+                        cmp byte [register_Y], 0x92         ; test Y register
                         jne test_error_register             ; failure case, stop tests
                         cmp byte [register_P], 0xa0         ; test processor flags
                         jne test_error_flags                ; failure case, stop tests
@@ -493,8 +492,20 @@ execute_next:           push ds                             ; preserve current f
                         je ldx_zp_y                         ; if so then execute it
                         cmp al, INS_LDX_ABS                 ; LDX absolute addressing opcode?
                         je ldx_abs                          ; if so then execute it
-                        cmp al, INS_LDX_ABSY                ; LDX absolute addressing + Y offset opcode
+                        cmp al, INS_LDX_ABSY                ; LDX absolute addressing + Y offset opcode?
                         je ldx_abs_y                        ; if so then execute it
+;----------------------------------------------------------------------------------------------------------
+                        cmp al, INS_LDY_IM                  ; LDY immediate addressing opcode?
+                        je ldy_imm                          ; if so then execute it
+                        cmp al, INS_LDY_ZP                  ; LDY zero page addressing opcode?
+                        je ldy_zp                           ; if so then execute it
+                        cmp al, INS_LDY_ZPX                 ; LDY zero page + X offset opcode?
+                        je ldy_zp_x                         ; if so then execute it
+                        cmp al, INS_LDY_ABS                 ; LDY absolute addressing opcode?
+                        je ldy_abs                          ; if so then execute it
+                        cmp al, INS_LDY_ABSX                ; LDY absolute addressing + X offset opcode?
+                        je ldy_abs_x                        ; if so then execute it
+;----------------------------------------------------------------------------------------------------------
                         cmp al, 0x00                        ; if no more instructions available
                         je execute_return                   ; then stop execution
                         jmp execute_error                   ; otherwise we've got an error
@@ -543,6 +554,20 @@ ldx_imm:                lodsb                               ; AL now holds the i
                         jne set_flags_snf                   ; then set negative flag
                         jmp execute_debug                   ; execute next instruction
 ;----------------------------------------------------------------------------------------------------------
+;                                  LDY - immediate addressing mode
+;----------------------------------------------------------------------------------------------------------
+ldy_imm:                lodsb                               ; AL now holds the immediate data to load
+                        pop ds                              ; hook up local variables
+                        call clear_zero_flag                ; clear zero flag
+                        call clear_negative_flag            ; clear negative flag
+                        add byte [program_counter], 0x02    ; update program counter
+                        mov byte [register_Y], al           ; load immediate data to A register
+                        cmp al, 0x00                        ; if AL is equal to 0
+                        je set_flags_szf                    ; then set zero flag
+                        test al, 0x80                       ; test negative
+                        jne set_flags_snf                   ; then set negative flag
+                        jmp execute_debug                   ; execute next instruction
+;----------------------------------------------------------------------------------------------------------
 ;                                    LDA - zero page addressing mode
 ;----------------------------------------------------------------------------------------------------------
 lda_zp:                 lodsb                               ; AL holds ZP address to load value from
@@ -567,6 +592,21 @@ ldx_zp:                 lodsb                               ; AL holds ZP addres
                         add byte [program_counter], 0x02    ; update program counter
                         call get_zp_val                     ; get value from zero page
                         mov byte [register_X], al           ; load ZP data to A register
+                        cmp al, 0x00                        ; if AL is equal to 0
+                        je set_flags_szf                    ; then set zero flag
+                        test al, 0x80                       ; test negative
+                        jne set_flags_snf                   ; then set negative flag
+                        jmp execute_debug                   ; execute next instruction             
+;----------------------------------------------------------------------------------------------------------
+;                                    LDY - zero page addressing mode
+;----------------------------------------------------------------------------------------------------------
+ldy_zp:                 lodsb                               ; AL holds ZP address to load value from
+                        pop ds                              ; hook up local variables
+                        call clear_zero_flag                ; clear zero flag
+                        call clear_negative_flag            ; clear negative flag
+                        add byte [program_counter], 0x02    ; update program counter
+                        call get_zp_val                     ; get value from zero page
+                        mov byte [register_Y], al           ; load ZP data to A register
                         cmp al, 0x00                        ; if AL is equal to 0
                         je set_flags_szf                    ; then set zero flag
                         test al, 0x80                       ; test negative
@@ -605,6 +645,22 @@ ldx_zp_y:               lodsb                               ; AL holds ZP addres
                         jne set_flags_snf                   ; then set negative flag
                         jmp execute_debug                   ; execute next instruction
 ;----------------------------------------------------------------------------------------------------------
+;                              LDY - zero page + X offset addressing mode
+;----------------------------------------------------------------------------------------------------------
+ldy_zp_x:               lodsb                               ; AL holds ZP address to load value from
+                        pop ds                              ; hook up local variables
+                        call clear_zero_flag                ; clear zero flag
+                        call clear_negative_flag            ; clear negative flag
+                        add byte [program_counter], 0x02    ; update program counter
+                        add al, byte [register_X]           ; add offset from X register to zero page
+                        call get_zp_val                     ; get value from zero page
+                        mov byte [register_Y], al           ; load ZP data to A register
+                        cmp al, 0x00                        ; if AL is equal to 0
+                        je set_flags_szf                    ; then set zero flag
+                        test al, 0x80                       ; test negative
+                        jne set_flags_snf                   ; then set negative flag
+                        jmp execute_debug                   ; execute next instruction
+;----------------------------------------------------------------------------------------------------------
 ;                                   LDA - absolute addressing mode
 ;----------------------------------------------------------------------------------------------------------
 lda_abs:                lodsw                               ; AX holds absolute address to load value from
@@ -629,6 +685,21 @@ ldx_abs:                lodsw                               ; AX holds absolute 
                         add byte [program_counter], 0x03    ; update program counter
                         call get_abs_val                    ; get value from absolute address
                         mov byte [register_X], al           ; load ZP data to A register
+                        cmp al, 0x00                        ; if AL is equal to 0
+                        je set_flags_szf                    ; then set zero flag
+                        test al, 0x80                       ; test negative
+                        jne set_flags_snf                   ; then set negative flag
+                        jmp execute_debug                   ; execute next instruction             
+;----------------------------------------------------------------------------------------------------------
+;                                   LDY - absolute addressing mode
+;----------------------------------------------------------------------------------------------------------
+ldy_abs:                lodsw                               ; AX holds absolute address to load value from
+                        pop ds                              ; hook up local variables
+                        call clear_zero_flag                ; clear zero flag
+                        call clear_negative_flag            ; clear negative flag
+                        add byte [program_counter], 0x03    ; update program counter
+                        call get_abs_val                    ; get value from absolute address
+                        mov byte [register_Y], al           ; load ZP data to A register
                         cmp al, 0x00                        ; if AL is equal to 0
                         je set_flags_szf                    ; then set zero flag
                         test al, 0x80                       ; test negative
@@ -661,6 +732,22 @@ ldx_abs_y:              lodsw                               ; AX holds absolute 
                         add al, byte [register_Y]           ; add offset from register X to absolute address
                         call get_abs_val                    ; get value from absolute address
                         mov byte [register_X], al           ; load ZP data to A register
+                        cmp al, 0x00                        ; if AL is equal to 0
+                        je set_flags_szf                    ; then set zero flag
+                        test al, 0x80                       ; test negative
+                        jne set_flags_snf                   ; then set negative flag
+                        jmp execute_debug                   ; execute next instruction             
+;----------------------------------------------------------------------------------------------------------
+;                             LDY - absolute addressing + X offset mode
+;----------------------------------------------------------------------------------------------------------
+ldy_abs_x:              lodsw                               ; AX holds absolute address to load value from
+                        pop ds                              ; hook up local variables
+                        call clear_zero_flag                ; clear zero flag
+                        call clear_negative_flag            ; clear negative flag
+                        add byte [program_counter], 0x03    ; update program counter                        
+                        add al, byte [register_X]           ; add offset from register X to absolute address
+                        call get_abs_val                    ; get value from absolute address
+                        mov byte [register_Y], al           ; load ZP data to A register
                         cmp al, 0x00                        ; if AL is equal to 0
                         je set_flags_szf                    ; then set zero flag
                         test al, 0x80                       ; test negative
