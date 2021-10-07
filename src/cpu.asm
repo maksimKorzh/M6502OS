@@ -65,13 +65,13 @@
 %define                 INS_STA_INDX 0x81                   ; implemented
 %define                 INS_STA_INDY 0x91                   ; implemented
 ;----------------------------------------------------------------------------------------------------------
-%define                 INS_STX_ZP 0x86
-%define                 INS_STX_ZPY 0x96
-%define                 INS_STX_ABS 0x8E
+%define                 INS_STX_ZP 0x86                     ; implemented
+%define                 INS_STX_ZPY 0x96                    ; implemented
+%define                 INS_STX_ABS 0x8e                    ; implemented
 ;----------------------------------------------------------------------------------------------------------
-%define                 INS_STY_ZP 0x84
-%define                 INS_STY_ZPX 0x94
-%define                 INS_STY_ABS 0x8C
+%define                 INS_STY_ZP 0x84                     ; implemented
+%define                 INS_STY_ZPX 0x94                    ; implemented
+%define                 INS_STY_ABS 0x8c                    ; implemented
 ;----------------------------------------------------------------------------------------------------------
 ;                                            STACK OPERATIONS
 ;----------------------------------------------------------------------------------------------------------
@@ -249,8 +249,8 @@ jmp $
 unit_tests:             call reset_cpu                      ; reset 6502 CPU
                         call reset_memory                   ; reset 6502 memory
 ;----------------------------------------------------------------------------------------------------------
-test_001:               mov byte [register_A], 0x45         ; set register A to 0x45
-                        mov word [test_program], 0x0485     ; STA $04
+test_001:               mov byte [register_Y], 0x45         ; set register Y to 0x45
+                        mov word [test_program], 0x0484     ; STY $04
                         mov si, test_program                ; point SI to test program
                         call load_program                   ; load test program to 6502 memory
                         mov si, test_ins_zp                 ; print debugging string
@@ -293,12 +293,12 @@ test_001:               mov byte [register_A], 0x45         ; set register A to 
                         mov si, test_passed                 ; point SI to test_passed string
                         call PROCEDURES:print_string        ; print test_passed string
 ;----------------------------------------------------------------------------------------------------------
-test_002:               mov byte [register_A], 0x38         ; set register A to 0x38
+test_002:               mov byte [register_Y], 0x38         ; set register Y to 0x38
                         mov byte [register_X], 0x01         ; set register X to 0x01
-                        mov word [test_program], 0x0495     ; STA $04,X
+                        mov word [test_program], 0x0494     ; STY $04,X
                         mov si, test_program                ; point SI to test program
                         call load_program                   ; load test program to 6502 memory
-                        mov si, test_ins_zpx                ; print debugging string
+                        mov si, test_ins_zpy                ; print debugging string
                         call PROCEDURES:print_string        ; print debugging string
                         mov si, machine_code                ; point SI to machine_code string
                         call PROCEDURES:print_string        ; print machine code string
@@ -338,8 +338,8 @@ test_002:               mov byte [register_A], 0x38         ; set register A to 
                         mov si, test_passed                 ; point SI to test_passed string
                         call PROCEDURES:print_string        ; print test_passed string
 ;----------------------------------------------------------------------------------------------------------
-test_003:               mov byte [register_A], 0x45         ; set register A to 0x45
-                        mov word [test_program], 0x8d       ; STA $0104
+test_003:               mov byte [register_Y], 0x45         ; set register Y to 0x45
+                        mov word [test_program], 0x8c       ; STY $0104
                         mov word [test_program + 1], 0x0104 ; little endian address: 04 01 
                         mov si, test_program                ; point SI to test program
                         call load_program                   ; load test program to 6502 memory
@@ -379,214 +379,6 @@ test_003:               mov byte [register_A], 0x45         ; set register A to 
                         jne test_error_memory               ; failure case, stop tests
                         pop ds                              ; hook up local variables
                         cmp byte [program_counter], 0x07    ; test program counter
-                        jne test_error_pc                   ; failure case, stop tests
-                        mov si, test_passed                 ; point SI to test_passed string
-                        call PROCEDURES:print_string        ; print test_passed string
-;----------------------------------------------------------------------------------------------------------
-test_004:               mov byte [register_A], 0x57         ; set register A to 0x57
-                        mov word [test_program], 0x9d       ; STA $0104,X
-                        mov word [test_program + 1], 0x0104 ; little endian address: 04 01 
-                        mov si, test_program                ; point SI to test program
-                        call load_program                   ; load test program to 6502 memory
-                        mov si, test_ins_abs_x              ; print debugging string
-                        call PROCEDURES:print_string        ; print debugging string
-                        mov si, machine_code                ; point SI to machine_code string
-                        call PROCEDURES:print_string        ; print machine code string
-                        mov si, PROGRAM                     ; 6502 memory range starting point
-                        mov di, PROGRAM + 0x08              ; 6502 memory range end point
-                        call print_memory_range             ; print 6502 program source bytes
-                        mov si, new_line                    ; point SI to new line
-                        call PROCEDURES:print_string        ; print new line
-                        mov si, memory_monitor              ; point SI to memory_monitor string
-                        call PROCEDURES:print_string        ; print memory_monitor string
-                        mov si, MEMORY + 0x100              ; 6502 memory range starting point
-                        mov di, MEMORY + 0x108              ; 6502 memory range end point
-                        call print_memory_range             ; print 6502 memory bytes
-                        mov si, cpu_before_execution        ; point SI to cpu_before_execution string
-                        call PROCEDURES:print_string        ; print cpu_before_execution
-                        call print_debug_info               ; print registers
-                        call execute                        ; execute instruction
-                        mov si, cpu_after_execution         ; point SI to cpu_after_execution string
-                        call PROCEDURES:print_string        ; print cpu_after_execution
-                        call print_debug_info               ; print registers
-                        mov si, new_line                    ; point SI to new line
-                        call PROCEDURES:print_string        ; print new line
-                        mov si, memory_monitor              ; point SI to memory_monitor string
-                        call PROCEDURES:print_string        ; print memory_monitor string
-                        mov si, MEMORY + 0x100              ; 6502 memory range starting point
-                        mov di, MEMORY + 0x108              ; 6502 memory range end point
-                        call print_memory_range             ; print 6502 memory bytes
-                        push ds                             ; preserve DS
-                        xor ax, ax                          ; reset AX
-                        mov ds, ax                          ; reset DX
-                        mov si, 0xe105                      ; point SI to absolute 0x0104
-                        cmp byte [ds:si], 0x57              ; check the value at absolute 0x0104
-                        jne test_error_memory               ; failure case, stop tests
-                        pop ds                              ; hook up local variables
-                        cmp byte [program_counter], 0x0a    ; test program counter
-                        jne test_error_pc                   ; failure case, stop tests
-                        mov si, test_passed                 ; point SI to test_passed string
-                        call PROCEDURES:print_string        ; print test_passed string
-;----------------------------------------------------------------------------------------------------------
-test_005:               mov byte [register_Y], 0x02         ; set register Y to 0x02
-                        mov byte [register_A], 0x21         ; set register A to 0x57
-                        mov word [test_program], 0x99       ; STA $0104,Y
-                        mov word [test_program + 1], 0x0104 ; little endian address: 04 01 
-                        mov si, test_program                ; point SI to test program
-                        call load_program                   ; load test program to 6502 memory
-                        mov si, test_ins_abs_y              ; print debugging string
-                        call PROCEDURES:print_string        ; print debugging string
-                        mov si, machine_code                ; point SI to machine_code string
-                        call PROCEDURES:print_string        ; print machine code string
-                        mov si, PROGRAM                     ; 6502 memory range starting point
-                        mov di, PROGRAM + 0x08              ; 6502 memory range end point
-                        call print_memory_range             ; print 6502 program source bytes
-                        mov si, new_line                    ; point SI to new line
-                        call PROCEDURES:print_string        ; print new line
-                        mov si, memory_monitor              ; point SI to memory_monitor string
-                        call PROCEDURES:print_string        ; print memory_monitor string
-                        mov si, MEMORY + 0x100              ; 6502 memory range starting point
-                        mov di, MEMORY + 0x108              ; 6502 memory range end point
-                        call print_memory_range             ; print 6502 memory bytes
-                        mov si, cpu_before_execution        ; point SI to cpu_before_execution string
-                        call PROCEDURES:print_string        ; print cpu_before_execution
-                        call print_debug_info               ; print registers
-                        call execute                        ; execute instruction
-                        mov si, cpu_after_execution         ; point SI to cpu_after_execution string
-                        call PROCEDURES:print_string        ; print cpu_after_execution
-                        call print_debug_info               ; print registers
-                        mov si, new_line                    ; point SI to new line
-                        call PROCEDURES:print_string        ; print new line
-                        mov si, memory_monitor              ; point SI to memory_monitor string
-                        call PROCEDURES:print_string        ; print memory_monitor string
-                        mov si, MEMORY + 0x100              ; 6502 memory range starting point
-                        mov di, MEMORY + 0x108              ; 6502 memory range end point
-                        call print_memory_range             ; print 6502 memory bytes
-                        push ds                             ; preserve DS
-                        xor ax, ax                          ; reset AX
-                        mov ds, ax                          ; reset DX
-                        mov si, 0xe106                      ; point SI to absolute 0x0104
-                        cmp byte [ds:si], 0x21              ; check the value at absolute 0x0104
-                        jne test_error_memory               ; failure case, stop tests
-                        pop ds                              ; hook up local variables
-                        cmp byte [program_counter], 0x0d    ; test program counter
-                        jne test_error_pc                   ; failure case, stop tests
-                        mov si, test_passed                 ; point SI to test_passed string
-                        call PROCEDURES:print_string        ; print test_passed string
-;----------------------------------------------------------------------------------------------------------
-test_006:               mov byte [register_X], 0x04         ; set register X offset
-                        mov word [test_program], 0x2081     ; STA ($20),X
-                        mov byte [test_program + 2], 0x00   ; reset previous instructions
-                        mov si, test_program                ; point SI to test program
-                        call load_program                   ; load test program to 6502 memory
-                        mov si, test_ins_indexed_indir      ; print debugging string
-                        call PROCEDURES:print_string        ; print debugging string
-                        mov si, machine_code                ; point SI to machine_code string
-                        call PROCEDURES:print_string        ; print machine code string
-                        mov si, PROGRAM                     ; 6502 memory range starting point
-                        mov di, PROGRAM + 0x08              ; 6502 memory range end point
-                        call print_memory_range             ; print 6502 program source bytes
-                        push ds                             ; preserve DS
-                        xor ax, ax                          ; reset AX
-                        mov ds, ax                          ; reset DS
-                        mov si, MEMORY + 0x24               ; point SI to 6502 simulated memory
-                        mov word [ds:si], 0x1074            ; init value in 6502 simulated memory
-                        pop ds                              ; hook up local variables
-                        mov si, new_line                    ; point SI to new line
-                        call PROCEDURES:print_string        ; print new line
-                        mov si, memory_monitor              ; point SI to memory_monitor string
-                        call PROCEDURES:print_string        ; print memory_monitor string
-                        mov si, MEMORY + 0x20               ; 6502 memory range starting point
-                        mov di, MEMORY + 0x28               ; 6502 memory range end point
-                        call print_memory_range             ; print 6502 memory bytes
-                        mov si, new_line                    ; point SI to new line
-                        call PROCEDURES:print_string        ; print new line
-                        mov si, memory_monitor              ; point SI to memory_monitor string
-                        call PROCEDURES:print_string        ; print memory_monitor string
-                        mov si, MEMORY + 0x1070             ; 6502 memory range starting point
-                        mov di, MEMORY + 0x1078             ; 6502 memory range end point
-                        call print_memory_range             ; print 6502 memory bytes
-                        mov si, cpu_before_execution        ; point SI to cpu_before_execution string
-                        call PROCEDURES:print_string        ; print cpu_before_execution
-                        call print_debug_info               ; print registers
-                        call execute                        ; execute instruction
-                        mov si, cpu_after_execution         ; point SI to cpu_after_execution string
-                        call PROCEDURES:print_string        ; print cpu_after_execution
-                        call print_debug_info               ; print registers
-                        mov si, new_line                    ; point SI to new line
-                        call PROCEDURES:print_string        ; print new line
-                        mov si, memory_monitor              ; point SI to memory_monitor string
-                        call PROCEDURES:print_string        ; print memory_monitor string
-                        mov si, MEMORY + 0x1070             ; 6502 memory range starting point
-                        mov di, MEMORY + 0x1078             ; 6502 memory range end point
-                        call print_memory_range             ; print 6502 memory bytes
-                        push ds                             ; preserve DS
-                        xor ax, ax                          ; reset AX
-                        mov ds, ax                          ; reset DX
-                        mov si, 0xf074                      ; point SI to absolute 0x0104
-                        cmp byte [ds:si], 0x21              ; check the value at absolute 0x0104
-                        jne test_error_memory               ; failure case, stop tests
-                        pop ds                              ; hook up local variables
-                        cmp byte [program_counter], 0x0f    ; test program counter
-                        jne test_error_pc                   ; failure case, stop tests
-                        mov si, test_passed                 ; point SI to test_passed string
-                        call PROCEDURES:print_string        ; print test_passed string
-;----------------------------------------------------------------------------------------------------------
-test_007:               mov byte [register_A], 0x32         ; set register A value
-                        mov byte [register_Y], 0x02         ; set register Y offset
-                        mov word [test_program], 0x2491     ; STA ($24),Y
-                        mov byte [test_program + 2], 0x00   ; reset previous instructions
-                        mov si, test_program                ; point SI to test program
-                        call load_program                   ; load test program to 6502 memory
-                        mov si, test_ins_indir_indexed      ; print debugging string
-                        call PROCEDURES:print_string        ; print debugging string
-                        mov si, machine_code                ; point SI to machine_code string
-                        call PROCEDURES:print_string        ; print machine code string
-                        mov si, PROGRAM                     ; 6502 memory range starting point
-                        mov di, PROGRAM + 0x08              ; 6502 memory range end point
-                        call print_memory_range             ; print 6502 program source bytes
-                        push ds                             ; preserve DS
-                        xor ax, ax                          ; reset AX
-                        mov ds, ax                          ; reset DS
-                        mov si, MEMORY + 0x24               ; point SI to 6502 simulated memory
-                        mov word [ds:si], 0x1074            ; init value in 6502 simulated memory
-                        pop ds                              ; hook up local variables
-                        mov si, new_line                    ; point SI to new line
-                        call PROCEDURES:print_string        ; print new line
-                        mov si, memory_monitor              ; point SI to memory_monitor string
-                        call PROCEDURES:print_string        ; print memory_monitor string
-                        mov si, MEMORY + 0x20               ; 6502 memory range starting point
-                        mov di, MEMORY + 0x28               ; 6502 memory range end point
-                        call print_memory_range             ; print 6502 memory bytes
-                        mov si, new_line                    ; point SI to new line
-                        call PROCEDURES:print_string        ; print new line
-                        mov si, memory_monitor              ; point SI to memory_monitor string
-                        call PROCEDURES:print_string        ; print memory_monitor string
-                        mov si, MEMORY + 0x1070             ; 6502 memory range starting point
-                        mov di, MEMORY + 0x1078             ; 6502 memory range end point
-                        call print_memory_range             ; print 6502 memory bytes
-                        mov si, cpu_before_execution        ; point SI to cpu_before_execution string
-                        call PROCEDURES:print_string        ; print cpu_before_execution
-                        call print_debug_info               ; print registers
-                        call execute                        ; execute instruction
-                        mov si, cpu_after_execution         ; point SI to cpu_after_execution string
-                        call PROCEDURES:print_string        ; print cpu_after_execution
-                        call print_debug_info               ; print registers
-                        mov si, new_line                    ; point SI to new line
-                        call PROCEDURES:print_string        ; print new line
-                        mov si, memory_monitor              ; point SI to memory_monitor string
-                        call PROCEDURES:print_string        ; print memory_monitor string
-                        mov si, MEMORY + 0x1070             ; 6502 memory range starting point
-                        mov di, MEMORY + 0x1078             ; 6502 memory range end point
-                        call print_memory_range             ; print 6502 memory bytes
-                        push ds                             ; preserve DS
-                        xor ax, ax                          ; reset AX
-                        mov ds, ax                          ; reset DX
-                        mov si, 0xf076                      ; point SI to absolute 0x0104
-                        cmp byte [ds:si], 0x32              ; check the value at absolute 0x0104
-                        jne test_error_memory               ; failure case, stop tests
-                        pop ds                              ; hook up local variables
-                        cmp byte [program_counter], 0x11    ; test program counter
                         jne test_error_pc                   ; failure case, stop tests
                         mov si, test_passed                 ; point SI to test_passed string
                         call PROCEDURES:print_string        ; print test_passed string
@@ -678,6 +470,20 @@ execute_next:           push ds                             ; preserve current f
                         cmp al, INS_STA_INDY                ; STA indirect indexed addressing opcode?
                         je sta_indirect_indexed             ; if so then execute it
 ;----------------------------------------------------------------------------------------------------------
+                        cmp al, INS_STX_ZP                  ; STX zero page addressing opcode?
+                        je stx_zp                           ; if so then execute it
+                        cmp al, INS_STX_ZPY                 ; STX zero page + Y offset opcode?
+                        je stx_zp_y                         ; if so then execute it
+                        cmp al, INS_STX_ABS                 ; STX absolute addressing opcode?
+                        je stx_abs                          ; if so then execute it
+;----------------------------------------------------------------------------------------------------------
+                        cmp al, INS_STY_ZP                  ; STY zero page addressing opcode?
+                        je sty_zp                           ; if so then execute it
+                        cmp al, INS_STY_ZPX                 ; STY zero page + Y offset opcode?
+                        je sty_zp_x                         ; if so then execute it
+                        cmp al, INS_STY_ABS                 ; STY absolute addressing opcode?
+                        je sty_abs                          ; if so then execute it
+;----------------------------------------------------------------------------------------------------------
                         cmp al, 0x00                        ; if no more instructions available
                         je execute_return                   ; then stop execution
                         jmp execute_error                   ; otherwise we've got an error
@@ -764,7 +570,7 @@ sta_zp:                 lodsb                               ; AL holds ZP addres
                         add ax, MEMORY                      ; get ZP address in simulated memory
                         xor bx, bx                          ; reset BX
                         mov bl, byte [register_A]           ; store the value of register A in BL
-                        call set_mem_val                     ; get value from zero page                        
+                        call set_mem_val                    ; get value from zero page                        
                         jmp execute_debug                   ; execute next instruction             
 ;----------------------------------------------------------------------------------------------------------
 ;                                    LDX - zero page addressing mode
@@ -782,6 +588,18 @@ ldx_zp:                 lodsb                               ; AL holds ZP addres
                         jne set_flags_snf                   ; then set negative flag
                         jmp execute_debug                   ; execute next instruction             
 ;----------------------------------------------------------------------------------------------------------
+;                                    STX - zero page addressing mode
+;----------------------------------------------------------------------------------------------------------
+stx_zp:                 lodsb                               ; AL holds ZP address to load value from
+                        pop ds                              ; hook up local variables
+                        add byte [program_counter], 0x02    ; update program counter
+                        xor ah, ah                          ; reset AX
+                        add ax, MEMORY                      ; get ZP address in simulated memory
+                        xor bx, bx                          ; reset BX
+                        mov bl, byte [register_X]           ; store the value of register A in BL
+                        call set_mem_val                    ; get value from zero page                        
+                        jmp execute_debug                   ; execute next instruction             
+;----------------------------------------------------------------------------------------------------------
 ;                                    LDY - zero page addressing mode
 ;----------------------------------------------------------------------------------------------------------
 ldy_zp:                 lodsb                               ; AL holds ZP address to load value from
@@ -795,6 +613,18 @@ ldy_zp:                 lodsb                               ; AL holds ZP addres
                         je set_flags_szf                    ; then set zero flag
                         test al, 0x80                       ; test negative
                         jne set_flags_snf                   ; then set negative flag
+                        jmp execute_debug                   ; execute next instruction             
+;----------------------------------------------------------------------------------------------------------
+;                                    STY - zero page addressing mode
+;----------------------------------------------------------------------------------------------------------
+sty_zp:                 lodsb                               ; AL holds ZP address to load value from
+                        pop ds                              ; hook up local variables
+                        add byte [program_counter], 0x02    ; update program counter
+                        xor ah, ah                          ; reset AX
+                        add ax, MEMORY                      ; get ZP address in simulated memory
+                        xor bx, bx                          ; reset BX
+                        mov bl, byte [register_Y]           ; store the value of register A in BL
+                        call set_mem_val                    ; get value from zero page                        
                         jmp execute_debug                   ; execute next instruction             
 ;----------------------------------------------------------------------------------------------------------
 ;                              LDA - zero page + X offset addressing mode
@@ -825,7 +655,7 @@ sta_zp_x:               lodsb                               ; AL holds ZP addres
                         add ax, bx                          ; add X register offset to zero page
                         xor bx, bx                          ; reset BX
                         mov bl, byte [register_A]           ; store the value of register A in BL
-                        call set_mem_val                     ; get value from zero page                        
+                        call set_mem_val                    ; get value from zero page                        
                         jmp execute_debug                   ; execute next instruction             
 ;----------------------------------------------------------------------------------------------------------
 ;                              LDX - zero page + Y offset addressing mode
@@ -844,6 +674,21 @@ ldx_zp_y:               lodsb                               ; AL holds ZP addres
                         jne set_flags_snf                   ; then set negative flag
                         jmp execute_debug                   ; execute next instruction
 ;----------------------------------------------------------------------------------------------------------
+;                                    STX - zero page + Y offset addressing mode
+;----------------------------------------------------------------------------------------------------------
+stx_zp_y:               lodsb                               ; AL holds ZP address to load value from
+                        pop ds                              ; hook up local variables
+                        add byte [program_counter], 0x02    ; update program counter
+                        xor ah, ah                          ; reset AX
+                        add ax, MEMORY                      ; get ZP address in simulated memory
+                        xor bx, bx                          ; reset BX
+                        mov bl, byte [register_Y]           ; store the value of register Y in BL
+                        add ax, bx                          ; add X register offset to zero page
+                        xor bx, bx                          ; reset BX
+                        mov bl, byte [register_X]           ; store the value of register X in BL
+                        call set_mem_val                    ; get value from zero page                        
+                        jmp execute_debug                   ; execute next instruction             
+;----------------------------------------------------------------------------------------------------------
 ;                              LDY - zero page + X offset addressing mode
 ;----------------------------------------------------------------------------------------------------------
 ldy_zp_x:               lodsb                               ; AL holds ZP address to load value from
@@ -860,6 +705,21 @@ ldy_zp_x:               lodsb                               ; AL holds ZP addres
                         jne set_flags_snf                   ; then set negative flag
                         jmp execute_debug                   ; execute next instruction
 ;----------------------------------------------------------------------------------------------------------
+;                                    STY - zero page + X offset addressing mode
+;----------------------------------------------------------------------------------------------------------
+sty_zp_x:               lodsb                               ; AL holds ZP address to load value from
+                        pop ds                              ; hook up local variables
+                        add byte [program_counter], 0x02    ; update program counter
+                        xor ah, ah                          ; reset AX
+                        add ax, MEMORY                      ; get ZP address in simulated memory
+                        xor bx, bx                          ; reset BX
+                        mov bl, byte [register_X]           ; store the value of register X in BL
+                        add ax, bx                          ; add X register offset to zero page
+                        xor bx, bx                          ; reset BX
+                        mov bl, byte [register_Y]           ; store the value of register Y in BL
+                        call set_mem_val                    ; get value from zero page                        
+                        jmp execute_debug                   ; execute next instruction             
+;----------------------------------------------------------------------------------------------------------
 ;                                   LDA - absolute addressing mode
 ;----------------------------------------------------------------------------------------------------------
 lda_abs:                lodsw                               ; AX holds absolute address to load value from
@@ -873,6 +733,17 @@ lda_abs:                lodsw                               ; AX holds absolute 
                         je set_flags_szf                    ; then set zero flag
                         test al, 0x80                       ; test negative
                         jne set_flags_snf                   ; then set negative flag
+                        jmp execute_debug                   ; execute next instruction             
+;----------------------------------------------------------------------------------------------------------
+;                                   STA - absolute addressing mode
+;----------------------------------------------------------------------------------------------------------
+sta_abs:                lodsw                               ; AX holds absolute address to save value to
+                        pop ds                              ; hook up local variables
+                        add byte [program_counter], 0x03    ; update program counter
+                        add ax, MEMORY                      ; get ZP address in simulated memory                        
+                        xor bx, bx                          ; reset BX
+                        mov bl, byte [register_A]           ; store the value of register A in BL
+                        call set_mem_val                    ; get value from zero page                        
                         jmp execute_debug                   ; execute next instruction             
 ;----------------------------------------------------------------------------------------------------------
 ;                                   LDX - absolute addressing mode
@@ -890,6 +761,17 @@ ldx_abs:                lodsw                               ; AX holds absolute 
                         jne set_flags_snf                   ; then set negative flag
                         jmp execute_debug                   ; execute next instruction             
 ;----------------------------------------------------------------------------------------------------------
+;                                   STX - absolute addressing mode
+;----------------------------------------------------------------------------------------------------------
+stx_abs:                lodsw                               ; AX holds absolute address to save value to
+                        pop ds                              ; hook up local variables
+                        add byte [program_counter], 0x03    ; update program counter
+                        add ax, MEMORY                      ; get ZP address in simulated memory                        
+                        xor bx, bx                          ; reset BX
+                        mov bl, byte [register_X]           ; store the value of register X in BL
+                        call set_mem_val                    ; get value from zero page                        
+                        jmp execute_debug                   ; execute next instruction             
+;----------------------------------------------------------------------------------------------------------
 ;                                   LDY - absolute addressing mode
 ;----------------------------------------------------------------------------------------------------------
 ldy_abs:                lodsw                               ; AX holds absolute address to load value from
@@ -905,14 +787,14 @@ ldy_abs:                lodsw                               ; AX holds absolute 
                         jne set_flags_snf                   ; then set negative flag
                         jmp execute_debug                   ; execute next instruction             
 ;----------------------------------------------------------------------------------------------------------
-;                                   STA - absolute addressing mode
+;                                   STY - absolute addressing mode
 ;----------------------------------------------------------------------------------------------------------
-sta_abs:                lodsw                               ; AX holds absolute address to save value to
+sty_abs:                lodsw                               ; AX holds absolute address to save value to
                         pop ds                              ; hook up local variables
                         add byte [program_counter], 0x03    ; update program counter
                         add ax, MEMORY                      ; get ZP address in simulated memory                        
                         xor bx, bx                          ; reset BX
-                        mov bl, byte [register_A]           ; store the value of register A in BL
+                        mov bl, byte [register_Y]           ; store the value of register Y in BL
                         call set_mem_val                    ; get value from zero page                        
                         jmp execute_debug                   ; execute next instruction             
 ;----------------------------------------------------------------------------------------------------------
