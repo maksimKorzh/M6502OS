@@ -1,5 +1,6 @@
 # M6502OS
-A bootable MOS 6502 processor simulator inspired by Apple 1 computer
+A bootable MOS 6502 processor simulator inspired by Apple 1 computer<br>
+IT'S A DEMO VERSION WITH ONLY A FEW INSTRUCTIONS IMPLEMENTED!
 
 # Project's name origin
 Originally the processor's name is MOS 6502 but since 'MOS' contains,<br>
